@@ -185,9 +185,11 @@ def build_context(data):
         lines.append("")
 
     if plate:
-        lines.append("ON HER PLATE (ongoing projects):")
+        lines.append("ON HER PLATE (ongoing projects + current progress):")
         for p in plate[:5]:
-            lines.append(f"  • {p.get('name')}: {p.get('ctx','')[:120]}")
+            lines.append(f"  • {p.get('name')}: {p.get('ctx','')[:100]}")
+            if p.get('progress'):
+                lines.append(f"    → Progress now: {p.get('progress','')[:150]}")
         lines.append("")
 
     if pending:
@@ -409,6 +411,7 @@ def build_schedule():
     body = request.json or {}
     start_time = body.get('startTime', '').strip()
     end_time   = body.get('endTime', '').strip()
+    daily_ctx  = body.get('dailyCtx', '').strip()
 
     data = load_data()
 
@@ -436,17 +439,24 @@ def build_schedule():
 
     plate = data.get('plate', [])
     plate_text = "\n\n".join(
-        f"- {p.get('name','')}: {p.get('ctx','(no context)')}"
+        "- {name}: {ctx}\n  CURRENT PROGRESS: {progress}".format(
+            name=p.get('name',''),
+            ctx=p.get('ctx','(no context)'),
+            progress=p.get('progress','not updated yet — ask her what's happening with this')
+        )
         for p in plate
     ) or "None added"
 
     now_str = now_et().strftime('%I:%M %p ET, %A %B %d')
+
+    daily_ctx_section = f"\nWHAT SHE TOLD YOU TODAY (most important — build the plan around this):\n{daily_ctx}\n" if daily_ctx else ""
 
     system = SYSTEM_PROMPT + f"""
 
 You are building Seyun's day plan. Be her personal assistant — warm, simple, clear.
 Current time: {now_str}
 Schedule window: {start_time or 'now'} → {end_time or '9:00 PM'}
+{daily_ctx_section}
 
 WHAT SHE HAS ON HER MIND (use ALL of this, not just tasks):
 

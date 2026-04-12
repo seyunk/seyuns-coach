@@ -265,9 +265,25 @@
     .plate-card:hover { border-color: var(--accent)88; }
     .plate-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
     .plate-name { font-size: 13px; font-weight: 700; }
-    .plate-ctx  { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .plate-ctx  { font-size: 12px; color: var(--muted); line-height: 1.55; margin-bottom: 8px; }
     .plate-del  { opacity: 0; transition: opacity .15s; flex-shrink: 0; }
     .plate-card:hover .plate-del { opacity: 1; }
+    .plate-progress-row { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+    .plate-progress-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--a2); margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+    .plate-progress-age { font-size: 9px; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .plate-progress-text { font-size: 12px; color: var(--text); line-height: 1.55; cursor: text; min-height: 18px; }
+    .plate-progress-text.empty { color: var(--muted); font-style: italic; }
+    .plate-progress-ta { width: 100%; background: var(--s2); border: 1px solid var(--a2)55; border-radius: 7px; padding: 7px 9px; color: var(--text); font-size: 12px; resize: none; min-height: 60px; outline: none; font-family: inherit; line-height: 1.5; transition: border-color .15s; display: none; }
+    .plate-progress-ta:focus { border-color: var(--a2); }
+    .plate-progress-save { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: var(--a2)22; border: 1px solid var(--a2)44; color: var(--a2); cursor: pointer; display: none; margin-top: 5px; transition: all .15s; }
+    .plate-progress-save:hover { background: var(--a2)33; }
+
+    /* Daily context card (shown before Build Day) */
+    .daily-ctx-card { background: linear-gradient(135deg, var(--surface), var(--s2)); border: 1px solid var(--accent)44; border-radius: var(--r); padding: 16px 18px; margin-bottom: 16px; }
+    .dcc-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .dcc-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+    .dcc-ta { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 13px; resize: none; min-height: 72px; outline: none; font-family: inherit; line-height: 1.6; transition: border-color .15s; }
+    .dcc-ta:focus { border-color: var(--accent); }
     .plate-add-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 12px; display: none; }
     .plate-add-form.open { display: block; }
 
@@ -357,13 +373,18 @@
       </div>
     </div>
 
-    <div class="plan-body" id="plan-body">
-      <div class="plan-empty">
-        <div class="plan-empty-i">🗓</div>
-        <div class="plan-empty-t">Your day planner is ready</div>
-        <div class="plan-empty-s">Hit <strong>✨ Build Day</strong> and your AI coach will plan your whole day — tasks, breaks, what order, how long. Everything.</div>
+    <!-- Daily context — always shown above the plan -->
+    <div style="padding: 14px 20px 0; flex-shrink:0" id="daily-ctx-wrap">
+      <div class="daily-ctx-card">
+        <div class="dcc-title">☀️ Before I build your day…</div>
+        <div class="dcc-sub">What's happened since yesterday? Where are you stuck? Even one sentence helps your coach plan something real.</div>
+        <textarea class="dcc-ta" id="daily-ctx-ta" placeholder="e.g. 'I didn't get to the NLP reading yesterday. I sent one application but it felt rough. I'm anxious about the deadline next week.'"></textarea>
+        <button class="btn btn-p btn-sm" style="width:100%;margin-top:9px" onclick="buildSchedule()">✨ Build my day with this context</button>
       </div>
     </div>
+
+    <div class="plan-body" id="plan-body" style="padding-top:12px"></div>
+  </div>
   </div>
 
   <!-- ══════════════════════════════════
@@ -644,6 +665,7 @@ async function buildSchedule() {
   const startRaw = document.getElementById('sched-start').value;
   const endRaw   = document.getElementById('sched-end').value;
   const notes    = document.getElementById('sched-notes')?.value.trim() || '';
+  const dailyCtx = document.getElementById('daily-ctx-ta')?.value.trim() || '';
   const body = document.getElementById('plan-body');
   const btn  = document.getElementById('rebuild-btn');
 
@@ -657,7 +679,7 @@ async function buildSchedule() {
   try {
     const r = await fetch('/api/schedule', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ startTime: fmtTime12(startRaw), endTime: fmtTime12(endRaw), notes })
+      body: JSON.stringify({ startTime: fmtTime12(startRaw), endTime: fmtTime12(endRaw), notes, dailyCtx })
     });
     const d = await r.json();
     if (d.needsKey) { showKeyModal(); body.innerHTML=''; btn.textContent='✨ Build Day'; btn.disabled=false; return; }
@@ -1117,14 +1139,62 @@ function renderPlate() {
       Nothing added yet.<br>Add the big ongoing things — job search, NLP study, research prep. Your coach will give you a specific action for each one every morning.
     </div>`; return;
   }
-  el.innerHTML = items.map(p => `
+  el.innerHTML = items.map(p => {
+    const age = p.progressUpdatedAt ? timeAgo(p.progressUpdatedAt) : null;
+    return `
     <div class="plate-card">
       <div class="plate-card-top">
         <div class="plate-name">${esc(p.name)}</div>
         <button class="bi plate-del" onclick="delPlateItem('${p.id}')">🗑</button>
       </div>
       ${p.ctx ? `<div class="plate-ctx">${esc(p.ctx)}</div>` : ''}
-    </div>`).join('');
+      <div class="plate-progress-row">
+        <div class="plate-progress-lbl">
+          📍 Where I am now
+          ${age ? `<span class="plate-progress-age">updated ${age}</span>` : '<span class="plate-progress-age">not updated yet</span>'}
+        </div>
+        <div class="plate-progress-text ${p.progress ? '' : 'empty'}" id="ppt-${p.id}"
+          onclick="editPlateProgress('${p.id}')">${p.progress ? esc(p.progress) : 'Tap to update your progress…'}</div>
+        <textarea class="plate-progress-ta" id="ppta-${p.id}"
+          placeholder="e.g. 'Sent 2 apps so far, need 3 more. Haven't looked at NLP in a week, stuck on chapter 3.'"
+          onblur="savePlateProgress('${p.id}')"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();savePlateProgress('${p.id}')}"
+        >${p.progress ? esc(p.progress) : ''}</textarea>
+        <button class="plate-progress-save" id="pps-${p.id}" onclick="savePlateProgress('${p.id}')">Save progress ✓</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editPlateProgress(id) {
+  document.getElementById('ppt-' + id).style.display = 'none';
+  const ta = document.getElementById('ppta-' + id);
+  const btn = document.getElementById('pps-' + id);
+  ta.style.display = 'block';
+  btn.style.display = 'inline-block';
+  ta.focus(); ta.select();
+}
+
+function savePlateProgress(id) {
+  const ta = document.getElementById('ppta-' + id);
+  if (!ta) return;
+  const text = ta.value.trim();
+  const p = (S.plate || []).find(p => p.id === id);
+  if (p) {
+    p.progress = text;
+    p.progressUpdatedAt = Date.now();
+    saveData(); renderPlate();
+    toast('Progress updated — your coach knows where you are now ✓');
+  }
+}
+
+function timeAgo(ts) {
+  const mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 2) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 // ═══════════════════════════════════════════════════════
