@@ -6,9 +6,9 @@
   <title>Seyun's Coach</title>
   <style>
     :root {
-      --bg: #11101a; --surface: #1c1b28; --s2: #252436; --border: #32304a;
-      --accent: #8b7cf8; --a2: #f072b6; --green: #4ade80;
-      --yellow: #fbbf24; --red: #f87171; --text: #eeeef5; --muted: #7070a0;
+      --bg: #1a1228; --surface: #241b38; --s2: #2e2448; --border: #3e3060;
+      --accent: #a07ef8; --a2: #f472c8; --green: #4ade80;
+      --yellow: #fbbf24; --red: #f87171; --text: #f2eeff; --muted: #9080b8;
       --r: 14px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -255,6 +255,10 @@
     .plate-card:hover .plate-del { opacity: 1; }
     .plate-add-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 12px; display: none; }
     .plate-add-form.open { display: block; }
+
+    /* Profile */
+    .profile-ta { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 13px; resize: none; min-height: 80px; outline: none; font-family: inherit; line-height: 1.6; margin-bottom: 4px; transition: border-color .15s; }
+    .profile-ta:focus { border-color: var(--a2); }
     .plate-ctx-ta { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 12px; resize: none; min-height: 70px; outline: none; font-family: inherit; line-height: 1.5; margin: 7px 0; transition: border-color .15s; }
     .plate-ctx-ta:focus { border-color: var(--accent); }
     .plate-empty { text-align: center; padding: 28px 14px; color: var(--muted); font-size: 13px; line-height: 1.6; }
@@ -346,22 +350,18 @@
 
     <div class="tabs">
       <button class="tab active" onclick="showTab('chat')" id="tab-chat">💬 Coach</button>
-      <button class="tab" onclick="showTab('focus')" id="tab-focus">⚡ Focus</button>
-      <button class="tab" onclick="showTab('tasks')" id="tab-tasks">✅ Tasks</button>
-      <button class="tab" onclick="showTab('dump')" id="tab-dump">💭 Dump</button>
-      <button class="tab" onclick="showTab('calendar')" id="tab-calendar">📅 Week</button>
+      <button class="tab" onclick="showTab('profile')" id="tab-profile">👤 About Me</button>
       <button class="tab" onclick="showTab('plate')" id="tab-plate">📌 Plate</button>
-      <button class="tab" onclick="showTab('panic')" id="tab-panic" style="color:var(--red)">🆘 Calm</button>
+      <button class="tab" onclick="showTab('calendar')" id="tab-calendar">📅 Week</button>
     </div>
 
     <!-- ── COACH CHAT ── -->
     <div class="panel active" id="panel-chat">
       <div class="quick-btns">
         <button class="qb" onclick="ask('What should I focus on right now?')">📍 What now?</button>
-        <button class="qb" onclick="ask(\"I'm stuck and can't start anything.\")">🧊 Stuck</button>
-        <button class="qb" onclick="ask('Remind me why Gwanak Analog matters and why I can do this.')">🔥 Motivate</button>
+        <button class="qb" onclick="ask(\"I'm overwhelmed and stuck.\")">🧊 Stuck</button>
+        <button class="qb" onclick="ask('Remind me why all this work matters.')">🔥 Why?</button>
         <button class="qb" onclick="ask('I just finished something!')">🎉 Done!</button>
-        <button class="qb panic" onclick="triggerPanic()">🆘 Panic</button>
       </div>
       <div class="messages" id="messages"></div>
       <div class="inp-area">
@@ -374,71 +374,26 @@
       </div>
     </div>
 
-    <!-- ── FOCUS ── -->
-    <div class="panel" id="panel-focus">
+    <!-- ── ABOUT ME / PROFILE ── -->
+    <div class="panel" id="panel-profile">
       <div class="zone">
-        <div class="focus-cur">
-          <div class="fc-lbl">🔥 Current Focus</div>
-          <div class="fc-name" id="fc-name">Nothing selected yet</div>
-          <div class="fc-sub"  id="fc-sub">Tasks tab → tap ⚡ to lock in</div>
-        </div>
-        <div class="just-start">
-          <div class="js-t">Just Start — 2 Minutes</div>
-          <div class="js-s">Commit to just 2 min. Activation energy is an ADHD thing — not a you thing.</div>
-          <div class="js-timer" id="js-disp">2:00</div>
-          <div class="js-btns">
-            <button class="btn btn-p" id="js-btn" onclick="jsToggle()">▶ I'll try 2 min</button>
-            <button class="btn btn-g" onclick="jsReset()">↺</button>
-          </div>
-        </div>
-        <div class="bd-card">
-          <div class="bd-hd">🧩 Break It Down <button class="btn btn-g btn-sm" onclick="doBreakdown()" id="bd-btn">Ask AI</button></div>
-          <div id="bd-content"><div style="font-size:11px;color:var(--muted)">Lock in a task first, then ask AI to break it into tiny steps.</div></div>
-        </div>
-        <div class="elapsed-card">
-          <div class="el-lbl">Time in Flow</div>
-          <div class="el-num" id="el-disp">0:00</div>
-          <div class="el-sub">Counts up — no pressure, just awareness</div>
-          <div class="el-btns">
-            <button class="btn btn-g btn-sm" id="el-btn" onclick="elToggle()">▶ Start</button>
-            <button class="btn btn-g btn-sm" onclick="elReset()">↺ Reset</button>
-          </div>
-        </div>
-      </div>
-    </div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">Tell your coach who you are</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Like a first 1:1 with a manager — the more you share, the smarter your day plans and coaching get. Update this any time your situation changes.</div>
 
-    <!-- ── TASKS ── -->
-    <div class="panel" id="panel-tasks">
-      <div class="zone">
-        <div class="add-row">
-          <input class="inp" style="flex:1;min-width:100px" id="task-in" type="text" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
-          <select class="sel" id="task-pri"><option value="high">🔴 High</option><option value="medium" selected>🟡 Med</option><option value="low">🟢 Low</option></select>
-          <select class="sel" id="task-when"><option value="true">📅 Today</option><option value="false">Later</option></select>
-          <button class="btn btn-p" onclick="addTask()">+</button>
-        </div>
-        <div class="filter-row">
-          <div class="ftab active" onclick="setFilter('all',this)">All</div>
-          <div class="ftab" onclick="setFilter('today',this)">Today</div>
-          <div class="ftab" onclick="setFilter('high',this)">🔴 High</div>
-          <div class="ftab" onclick="setFilter('done',this)">✓ Done</div>
-        </div>
-        <div id="task-list"></div>
-      </div>
-    </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:5px">Where is your head right now?</div>
+        <textarea class="profile-ta" id="profile-mindset" placeholder="e.g. 'I've been really anxious about job applications and avoiding everything. I feel behind and don't know where to start.'"></textarea>
 
-    <!-- ── BRAIN DUMP ── -->
-    <div class="panel" id="panel-dump">
-      <div class="zone">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:7px;line-height:1.5">Get it ALL out. Every worry, idea, task, fear. Your coach will sort it.</div>
-        <textarea class="dump-ta" id="dump-ta" placeholder="Type everything on your mind — worries, ideas, tasks, random thoughts. No judgment.&#10;&#10;Cmd+Enter to analyze."
-          onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter')saveDump()"></textarea>
-        <div style="display:flex;justify-content:flex-end;gap:5px;margin-top:7px">
-          <button class="btn btn-g btn-sm" onclick="document.getElementById('dump-ta').value=''">Clear</button>
-          <button class="btn btn-p btn-sm" onclick="saveDump()">Analyze (⌘↵)</button>
-        </div>
-        <div id="dump-analysis"></div>
-        <div class="dump-hist-lbl">Previous Dumps</div>
-        <div id="dump-list"></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">Short-term goals (next 2–4 weeks)</div>
+        <textarea class="profile-ta" id="profile-short" placeholder="e.g. 'Submit 3 research internship applications. Get through NLP chapter 2–4. Set up a daily routine.'"></textarea>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">Long-term goals & what drives you</div>
+        <textarea class="profile-ta" id="profile-long" placeholder="e.g. 'Buy back Gwanak Analog — my dad's company. Build enough skills and network to eventually run it. Prove I can do this.'"></textarea>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">How you work best (and what blocks you)</div>
+        <textarea class="profile-ta" id="profile-style" placeholder="e.g. 'I work best in the morning before 12pm. I spiral when I don't know what to do first. I need small clear steps. I avoid things that feel too big or vague.'"></textarea>
+
+        <button class="btn btn-p" style="width:100%;margin-top:12px" onclick="saveProfile()">Save — update my coach</button>
+        <div id="profile-saved" style="display:none;text-align:center;font-size:12px;color:var(--green);margin-top:8px">✓ Saved — your coach now knows this</div>
       </div>
     </div>
 
@@ -466,32 +421,6 @@
       </div>
     </div>
 
-    <!-- ── PANIC / CALM ── -->
-    <div class="panel" id="panel-panic">
-      <div class="panic-zone">
-        <div class="panic-banner">
-          <div class="pb-title">🆘 Panic Mode</div>
-          <div class="pb-sub">You're safe. This overwhelm is your ADHD + OCD talking — not reality. Let's slow down.</div>
-        </div>
-        <div class="grounding-box">
-          <div class="gb-title">👁 Ground Yourself First (30 sec)</div>
-          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Name 3 things you can see right now</div>
-          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Feel your feet on the floor</div>
-          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Slow breath — in for 4, out for 6</div>
-          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Drink a sip of water</div>
-        </div>
-        <div class="card">
-          <div class="card-lbl">What's triggering this? (optional)</div>
-          <textarea class="panic-in" id="panic-in" placeholder="Tell me what's going on. What feels out of control?"></textarea>
-          <button class="btn btn-red" style="width:100%" onclick="doPanic()">🆘 Help me calm down + find ONE next step</button>
-        </div>
-        <div id="panic-result"></div>
-        <div class="card" style="text-align:center">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">When you feel a little steadier…</div>
-          <button class="btn btn-g" onclick="showTab('focus')">⚡ Go to Focus Mode</button>
-        </div>
-      </div>
-    </div>
 
   </div>
 </div>
@@ -502,15 +431,9 @@
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, plate: [] };
-let filter = 'all';
+let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, plate: [], profile: {} };
 let chatHistory = [];
 let planSettingsOpen = false;
-
-// Timers
-let jsInt = null, jsOn = false, jsSec = 120;
-let elInt = null, elOn = false, elSec = 0;
-let stepsDone = [];
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -542,11 +465,9 @@ async function boot() {
   }
 
   await loadData();
-  renderTasks();
-  renderFocus();
-  renderDumps();
   renderCalendar();
   renderPlate();
+  renderProfile();
 
   // Restore chat history
   if (S.chatHistory && S.chatHistory.length) {
@@ -693,8 +614,6 @@ function renderSchedule(d) {
   const list = items.map(item => {
     const type = item.type || 'work';
     const isBreak = type === 'break';
-    const focusBtn = !isBreak && item.task_id
-      ? `<button class="di-focus" onclick="lockFocusFromSched('${item.task_id}')">⚡ Focus this</button>` : '';
     return `<div class="day-item ${isBreak ? 'break-item' : ''}">
       <div class="di-time">${esc(item.time || '')}</div>
       <div class="di-dot ${type}"></div>
@@ -702,7 +621,6 @@ function renderSchedule(d) {
         <div class="di-label">${esc(item.label || '')}</div>
         ${item.note ? `<div class="di-note">${esc(item.note)}</div>` : ''}
         <div class="di-dur">${item.duration_min} min</div>
-        ${focusBtn}
       </div>
     </div>`;
   }).join('');
@@ -717,17 +635,6 @@ function renderSchedule(d) {
   body.innerHTML = greeting + list + closing + rebuild;
 }
 
-function addSuggestion(label, btn) {
-  S.tasks.unshift({ id:uid(), text:label, priority:'high', isToday:true, done:false, createdAt:Date.now(), completedAt:null });
-  saveData(); renderTasks();
-  btn.textContent = '✓ Added'; btn.disabled = true;
-  toast('Added to today ✅');
-}
-
-function lockFocusFromSched(id) {
-  S.focusTask = id; saveData(); renderFocus(); showTab('focus');
-  toast('Locked in ⚡');
-}
 
 // ═══════════════════════════════════════════════════════
 // CHAT
@@ -776,6 +683,16 @@ async function callCoach() {
       chatHistory.push({ role:'assistant', content: d.content });
       if (chatHistory.length > 60) chatHistory = chatHistory.slice(-60);
       saveData();
+      // Silently extract tasks from conversation in background
+      fetch('/api/extracttasks', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ messages: chatHistory.slice(-8) })
+      }).then(r => r.json()).then(d => {
+        if (d.tasks && d.tasks.length) {
+          S.tasks = [...d.tasks, ...S.tasks];
+          renderCalendar();
+        }
+      }).catch(() => {});
     }
   } catch { rmEl(tid); addBubble('coach', '⚠️ Can\'t reach the server. Is it running?'); }
   setThinking(false);
@@ -812,190 +729,6 @@ function fmt(t) {
     .replace(/^/,'<p>').replace(/$/,'</p>');
 }
 
-// ═══════════════════════════════════════════════════════
-// TASKS
-// ═══════════════════════════════════════════════════════
-function addTask() {
-  const el = document.getElementById('task-in');
-  const text = el.value.trim(); if (!text) return;
-  S.tasks.unshift({ id:uid(), text, priority: document.getElementById('task-pri').value,
-    isToday: document.getElementById('task-when').value === 'true', done:false, createdAt:Date.now(), completedAt:null });
-  el.value = ''; saveData(); renderTasks(); toast('Added ✓');
-}
-
-function toggleTask(id) {
-  const t = S.tasks.find(t=>t.id===id); if (!t) return;
-  t.done = !t.done; t.completedAt = t.done ? Date.now() : null;
-  saveData(); renderTasks(); renderFocus(); renderCalendar();
-  if (t.done) toast('Done! 🎉');
-}
-
-function delTask(id) { S.tasks = S.tasks.filter(t=>t.id!==id); saveData(); renderTasks(); }
-
-function lockFocus(id) {
-  S.focusTask = id; saveData(); renderFocus(); showTab('focus');
-  toast('Locked in ⚡');
-}
-
-function renderTasks() {
-  const el = document.getElementById('task-list'); if (!el) return;
-  let tasks = [...S.tasks];
-  if (filter === 'today') tasks = tasks.filter(t => t.isToday && !t.done);
-  else if (filter === 'high') tasks = tasks.filter(t => t.priority==='high' && !t.done);
-  else if (filter === 'done') tasks = tasks.filter(t => t.done);
-  else tasks = tasks.filter(t => !t.done);
-  const po = { high:0, medium:1, low:2 };
-  tasks.sort((a,b) => { if(a.done!==b.done) return a.done?1:-1; return (po[a.priority]||1)-(po[b.priority]||1); });
-  if (!tasks.length) { el.innerHTML=`<div class="empty-st"><div class="empty-st-i">${filter==='done'?'🎊':'✨'}</div>${filter==='done'?'Nothing yet!':'All clear!'}</div>`; return; }
-  const ic = { high:'🔴', medium:'🟡', low:'🟢' };
-  el.innerHTML = tasks.map(t => `<div class="ti ${t.done?'done':''} ${S.focusTask===t.id?'focused-t':''}">
-    <div class="cb ${t.done?'chk':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-    <div class="tibody">
-      <div class="titxt">${esc(t.text)}</div>
-      <div class="titags">
-        <span class="tg t${t.priority[0]}">${ic[t.priority]} ${t.priority}</span>
-        ${t.isToday?'<span class="tg tt">📅 Today</span>':''}
-        ${S.focusTask===t.id?'<span class="tg tf">🔥 Focus</span>':''}
-      </div>
-    </div>
-    <div class="tiacts">
-      ${!t.done?`<button class="bi" onclick="lockFocus('${t.id}')" title="Focus">⚡</button>`:''}
-      <button class="bi" onclick="delTask('${t.id}')">🗑</button>
-    </div>
-  </div>`).join('');
-}
-
-function setFilter(f, el) {
-  filter = f;
-  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active'); renderTasks();
-}
-
-// ═══════════════════════════════════════════════════════
-// FOCUS PANEL
-// ═══════════════════════════════════════════════════════
-function renderFocus() {
-  const nm = document.getElementById('fc-name'), sb = document.getElementById('fc-sub');
-  if (!nm) return;
-  const t = S.tasks.find(t => t.id===S.focusTask && !t.done);
-  if (t) { nm.textContent = t.text; sb.textContent = 'You got this. Start tiny if you need to.'; }
-  else { nm.textContent = 'Nothing selected'; sb.textContent = 'Tasks tab → tap ⚡ to lock in'; }
-}
-
-function jsToggle() {
-  if (!jsOn) {
-    jsOn=true; document.getElementById('js-btn').textContent='⏸ Pause';
-    jsInt = setInterval(() => {
-      jsSec--; jsUpdateDisp();
-      if (jsSec <= 0) {
-        clearInterval(jsInt); jsOn=false;
-        document.getElementById('js-btn').textContent='▶ Keep going!';
-        document.getElementById('js-disp').style.color='var(--green)';
-        toast('2 minutes DONE! 🎉 That was the hardest part.');
-        addBubble('coach', "You just crossed the activation barrier — that's genuinely the hardest part for ADHD brains. 2 minutes in. Keep riding it if you can 💪");
-        chatHistory.push({ role:'assistant', content:"You just crossed the activation barrier — that's genuinely the hardest part for ADHD brains. 2 minutes in. Keep riding it if you can 💪" });
-        saveData();
-      }
-    }, 1000);
-  } else {
-    jsOn=false; clearInterval(jsInt);
-    document.getElementById('js-btn').textContent='▶ Resume';
-  }
-}
-function jsReset() {
-  jsOn=false; clearInterval(jsInt); jsSec=120;
-  document.getElementById('js-disp').style.color='var(--accent)';
-  document.getElementById('js-btn').textContent="▶ I'll try 2 min";
-  jsUpdateDisp();
-}
-function jsUpdateDisp() {
-  const m=Math.floor(jsSec/60).toString().padStart(2,'0'), s=(jsSec%60).toString().padStart(2,'0');
-  document.getElementById('js-disp').textContent=`${m}:${s}`;
-}
-
-function elToggle() {
-  if (!elOn) { elOn=true; document.getElementById('el-btn').textContent='⏸ Pause'; elInt=setInterval(()=>{elSec++;elUpdateDisp();},1000); }
-  else { elOn=false; clearInterval(elInt); document.getElementById('el-btn').textContent='▶ Resume'; }
-}
-function elReset() { elOn=false; clearInterval(elInt); elSec=0; document.getElementById('el-btn').textContent='▶ Start'; elUpdateDisp(); }
-function elUpdateDisp() {
-  const h=Math.floor(elSec/3600),m=Math.floor((elSec%3600)/60),s=elSec%60;
-  document.getElementById('el-disp').textContent=h?`${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`:`${m}:${s.toString().padStart(2,'0')}`;
-}
-
-async function doBreakdown() {
-  const t = S.tasks.find(t=>t.id===S.focusTask&&!t.done);
-  if (!t) { toast('Lock in on a task first (Tasks → ⚡)'); return; }
-  const btn=document.getElementById('bd-btn'), el=document.getElementById('bd-content');
-  btn.textContent='…'; btn.disabled=true;
-  el.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">Breaking it down…</div>';
-  try {
-    const r=await fetch('/api/breakdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:t.text})});
-    const d=await r.json();
-    stepsDone=new Array((d.steps||[]).length).fill(false);
-    el.innerHTML=(d.steps||[]).map((s,i)=>`<div class="step-row">
-      <div class="scb" id="scb-${i}" onclick="toggleStep(${i})">${stepsDone[i]?'✓':''}</div>
-      <div class="stxt" id="stxt-${i}">${esc(s)}</div>
-    </div>`).join('')+(d.encouragement?`<div class="bd-enc">"${esc(d.encouragement)}"</div>`:'');
-  } catch { el.innerHTML='<div style="font-size:11px;color:var(--red)">Could not break down.</div>'; }
-  btn.textContent='Refresh'; btn.disabled=false;
-}
-
-function toggleStep(i) {
-  stepsDone[i]=!stepsDone[i];
-  document.getElementById('scb-'+i).className='scb'+(stepsDone[i]?' done':'');
-  document.getElementById('scb-'+i).textContent=stepsDone[i]?'✓':'';
-  document.getElementById('stxt-'+i).className='stxt'+(stepsDone[i]?' done':'');
-  if(stepsDone[i]) toast('Step done! 🎉');
-}
-
-// ═══════════════════════════════════════════════════════
-// BRAIN DUMP
-// ═══════════════════════════════════════════════════════
-async function saveDump() {
-  const el=document.getElementById('dump-ta');
-  const text=el.value.trim(); if(!text) return;
-  S.brainDumps.unshift({ id:uid(), text, ts:Date.now() });
-  el.value=''; saveData(); renderDumps();
-  const area=document.getElementById('dump-analysis');
-  area.innerHTML='<div class="da-box"><div class="da-loading">✨ Your coach is reading this…</div></div>';
-  try {
-    const r=await fetch('/api/processdump',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
-    const d=await r.json();
-    if(d.needsKey){showKeyModal();area.innerHTML='';return;}
-    renderDumpAnalysis(d,area);
-  } catch { area.innerHTML='<div class="da-box"><div class="da-loading" style="color:var(--red)">Could not analyze.</div></div>'; }
-}
-
-function renderDumpAnalysis(d, area) {
-  const cats=(d.categories||[]).map(c=>`
-    <div class="da-cat-lbl">${c.emoji} ${c.name}</div>
-    ${(c.items||[]).map(item=>`<div class="da-item"><span style="flex:1">${esc(item)}</span><button class="da-add" onclick="dumpToTask('${esc(item)}',this)">→ Task</button></div>`).join('')}
-  `).join('');
-  area.innerHTML=`<div class="da-box">
-    <div class="da-enc">${esc(d.encouragement||'')}</div>
-    ${cats}
-    ${d.anchor?`<div class="da-anchor">💡 ${esc(d.anchor)}</div>`:''}
-  </div>`;
-}
-
-function dumpToTask(text, btn) {
-  S.tasks.unshift({id:uid(),text,priority:'medium',isToday:false,done:false,createdAt:Date.now(),completedAt:null});
-  saveData(); renderTasks(); btn.textContent='✓'; btn.disabled=true;
-  toast('Added to tasks ✅');
-}
-
-function renderDumps() {
-  const el=document.getElementById('dump-list'); if(!el) return;
-  const items=S.brainDumps.slice(0,8);
-  if(!items.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">Nothing yet.</div>';return;}
-  el.innerHTML=items.map(d=>`<div class="dump-i">
-    <span style="font-size:12px">💭</span>
-    <span class="dump-itxt">${esc(d.text.slice(0,65))}${d.text.length>65?'…':''}</span>
-    <div class="dump-iacts"><button class="bi" onclick="delDump('${d.id}')">🗑</button></div>
-  </div>`).join('');
-}
-function delDump(id){S.brainDumps=S.brainDumps.filter(d=>d.id!==id);saveData();renderDumps();}
 
 // ═══════════════════════════════════════════════════════
 // CALENDAR
@@ -1025,55 +758,31 @@ function renderCalendar() {
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// PANIC MODE
-// ═══════════════════════════════════════════════════════
-function triggerPanic() { showTab('panic'); document.getElementById('panic-in').focus(); }
 
-async function doPanic() {
-  const text=document.getElementById('panic-in').value.trim();
-  const area=document.getElementById('panic-result');
-  area.innerHTML='<div class="panic-result"><div style="text-align:center;padding:10px;color:var(--muted);font-size:12px">Getting help…</div></div>';
-  try {
-    const r=await fetch('/api/panic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
-    const d=await r.json();
-    if(d.needsKey){showKeyModal();area.innerHTML='';return;}
-    area.innerHTML=`<div class="panic-result">
-      <div class="pr-section"><div class="pr-lbl">First, breathe.</div><div class="pr-breathe">${esc(d.breathe||'')}</div></div>
-      <div class="pr-section"><div class="pr-lbl">This is not you failing.</div><div class="pr-text">${esc(d.normalize||'')}</div></div>
-      <div class="pr-section"><div class="pr-lbl">Right now, try this:</div><div class="pr-text">${esc(d.ground||'')}</div></div>
-      ${d.next_step?`<div class="pr-lbl" style="margin-top:8px">When you're ready — ONE small step:</div><div class="pr-next">${esc(d.next_step)}</div>`:''}
-      ${d.next_step?`<div style="margin-top:12px;text-align:center"><button class="btn btn-p btn-sm" onclick="panicToPlan('${esc(d.next_step)}')">↺ Add to day plan & rebuild</button></div>`:''}
-    </div>`;
-    if(d.breathe){
-      const combined=`${d.breathe} ${d.normalize} ${d.ground}${d.next_step?' When ready: '+d.next_step:''}`;
-      addBubble('coach',combined); chatHistory.push({role:'assistant',content:combined}); saveData();
-    }
-    // Auto-rebuild plan in background so it's ready when they're ready
-    if(d.next_step) {
-      S.lastSchedule = null; // invalidate cache so it rebuilds with new context
-      saveData();
-    }
-  } catch { area.innerHTML='<div class="panic-result"><div style="color:var(--red);font-size:12px;text-align:center">Could not reach server.</div></div>'; }
+// ═══════════════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════════════
+function saveProfile() {
+  S.profile = {
+    mindset:    document.getElementById('profile-mindset').value.trim(),
+    shortGoals: document.getElementById('profile-short').value.trim(),
+    longGoals:  document.getElementById('profile-long').value.trim(),
+    workStyle:  document.getElementById('profile-style').value.trim(),
+  };
+  saveData();
+  const saved = document.getElementById('profile-saved');
+  saved.style.display = 'block';
+  setTimeout(() => saved.style.display = 'none', 3000);
+  toast('Profile saved — coach now knows you better ✓');
 }
 
-function panicToPlan(nextStep) {
-  // Add the next step as a high-priority today task
-  S.tasks.unshift({ id:uid(), text: nextStep, priority:'high', isToday:true, done:false, createdAt:Date.now(), completedAt:null });
-  saveData(); renderTasks();
-  toast('Added to plan — rebuilding your day…');
-  // Rebuild the schedule and switch to it
-  buildSchedule();
-  // Switch to plan view after a short pause so they see the transition
-  setTimeout(() => {
-    document.querySelector('.plan-col').scrollTo(0,0);
-  }, 400);
-}
-
-function checkGround(el) {
-  el.classList.toggle('checked');
-  el.querySelector('.gb-done').style.opacity=el.classList.contains('checked')?'1':'0';
-  if(el.classList.contains('checked')) toast('✓ Good');
+function renderProfile() {
+  const p = S.profile || {};
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('profile-mindset', p.mindset);
+  set('profile-short',   p.shortGoals);
+  set('profile-long',    p.longGoals);
+  set('profile-style',   p.workStyle);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1129,8 +838,7 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function toast(msg){ const tc=document.getElementById('toasts'); const t=document.createElement('div'); t.className='toast'; t.textContent=msg; tc.appendChild(t); setTimeout(()=>t.remove(),3200); }
 
 document.addEventListener('keydown', e => {
-  if((e.metaKey||e.ctrlKey)&&e.key==='k'){ e.preventDefault(); showTab('tasks'); setTimeout(()=>document.getElementById('task-in')?.focus(),50); }
-  if((e.metaKey||e.ctrlKey)&&e.key==='b'){ e.preventDefault(); showTab('dump'); setTimeout(()=>document.getElementById('dump-ta')?.focus(),50); }
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); document.getElementById('chat-ta')?.focus(); }
 });
 
 boot();

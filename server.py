@@ -154,40 +154,48 @@ Never: preachy, generic, corporate, or dismissive.
 """
 
 def build_context(data):
-    tasks = data.get('tasks', [])
-    now_ms = now_et().timestamp() * 1000
+    tasks    = data.get('tasks', [])
+    profile  = data.get('profile', {})
+    plate    = data.get('plate', [])
+    now_ms   = now_et().timestamp() * 1000
     pending  = [t for t in tasks if not t.get('done')]
     done_today = [t for t in tasks if t.get('done') and now_ms - t.get('completedAt', 0) < 86_400_000]
-    high     = [t for t in pending if t.get('priority') == 'high']
-    today    = [t for t in pending if t.get('isToday')]
-    focus_id = data.get('focusTask')
-    focus    = next((t for t in tasks if t.get('id') == focus_id and not t.get('done')), None)
 
     lines = [f"DATE/TIME: {now_et().strftime('%A, %B %d, %Y — %I:%M %p ET')}", ""]
-    if focus:
-        lines += [f"CURRENT FOCUS TASK: {focus['text']}", ""]
-    lines.append(f"TODAY'S TASKS ({len(today)} pending):")
-    for t in today[:7]:
-        p = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(t.get('priority', ''), '•')
-        lines.append(f"  {p} {t['text']}")
-    if not today:
-        lines.append("  (none scheduled for today)")
-    lines.append("")
-    if high:
-        lines.append(f"HIGH PRIORITY BACKLOG ({len(high)}):")
-        for t in high[:4]:
-            lines.append(f"  🔴 {t['text']}")
+
+    # Inject profile — this is what makes responses personal
+    if profile.get('mindset'):
+        lines += ["SEYUN'S CURRENT MINDSET:", profile['mindset'], ""]
+    if profile.get('shortGoals'):
+        lines += ["SHORT-TERM GOALS:", profile['shortGoals'], ""]
+    if profile.get('longGoals'):
+        lines += ["LONG-TERM GOALS:", profile['longGoals'], ""]
+    if profile.get('workStyle'):
+        lines += ["HOW SHE WORKS BEST:", profile['workStyle'], ""]
+
+    if plate:
+        lines.append("ON HER PLATE (ongoing projects):")
+        for p in plate[:5]:
+            lines.append(f"  • {p.get('name')}: {p.get('ctx','')[:120]}")
         lines.append("")
+
+    if pending:
+        lines.append(f"TASKS ({len(pending)} pending):")
+        for t in pending[:8]:
+            p = {'high':'🔴','medium':'🟡','low':'🟢'}.get(t.get('priority',''),'•')
+            lines.append(f"  {p} {t['text']}")
+        lines.append("")
+
     if done_today:
-        lines.append(f"COMPLETED TODAY ({len(done_today)}):")
+        lines.append(f"COMPLETED TODAY:")
         for t in done_today[:5]:
             lines.append(f"  ✓ {t['text']}")
         lines.append("")
-    lines.append(f"TOTAL PENDING: {len(pending)} tasks")
+
     return "\n".join(lines)
 
 def full_system(data):
-    return SYSTEM_PROMPT + "\n\n━━━ CURRENT STATE ━━━\n" + build_context(data)
+    return SYSTEM_PROMPT + "\n\n━━━ SEYUN'S CONTEXT ━━━\n" + build_context(data)
 
 def api_call(messages, system=None, max_tokens=1024):
     data = load_data()
@@ -479,6 +487,47 @@ Return ONLY valid JSON:
         return jsonify(extract_json(raw))
     except Exception as e:
         return auth_err(e)
+
+
+@app.route('/api/extracttasks', methods=['POST'])
+def extract_tasks():
+    """Read last few chat messages and silently pull out any tasks/commitments mentioned."""
+    messages = (request.json or {}).get('messages', [])[-8:]
+    if not messages:
+        return jsonify({"tasks": []})
+
+    system = """You are a task extractor. Read this conversation and find any concrete things the user said she needs to do, wants to do, or committed to doing.
+
+Rules:
+- Only extract clear, actionable items (not vague thoughts)
+- If nothing clear was said, return empty array
+- Max 5 tasks
+- Keep each task label short and specific (under 10 words)
+
+Return ONLY valid JSON:
+{"tasks": [{"text": "...", "priority": "high|medium|low", "isToday": true|false}]}"""
+
+    try:
+        raw = api_call(messages, system=system, max_tokens=400)
+        result = extract_json(raw)
+        if result.get('tasks'):
+            data = load_data()
+            existing_texts = {t['text'].lower() for t in data.get('tasks', [])}
+            added = []
+            for t in result['tasks']:
+                if t.get('text') and t['text'].lower() not in existing_texts:
+                    new_task = {'id': f"auto-{int(now_et().timestamp())}-{len(added)}", 'text': t['text'],
+                                'priority': t.get('priority','medium'), 'isToday': t.get('isToday', False),
+                                'done': False, 'createdAt': int(now_et().timestamp()*1000), 'completedAt': None,
+                                'auto': True}
+                    data.setdefault('tasks', []).insert(0, new_task)
+                    added.append(new_task)
+            if added:
+                save_data(data)
+            return jsonify({"tasks": added})
+        return jsonify({"tasks": []})
+    except Exception as e:
+        return jsonify({"tasks": [], "error": str(e)})
 
 
 init_db()
