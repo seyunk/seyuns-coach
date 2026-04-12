@@ -547,6 +547,49 @@ Return ONLY valid JSON:
         return jsonify({"tasks": [], "error": str(e)})
 
 
+@app.route('/api/weekreflect', methods=['POST'])
+def week_reflect():
+    body = request.json or {}
+    tasks    = body.get('tasks', [])
+    captures = body.get('captures', [])
+    wins     = body.get('wins', [])
+    label    = body.get('weekLabel', 'this week')
+
+    all_items = (
+        [f"Task completed: {t}" for t in tasks] +
+        [f"Captured & resolved: {c}" for c in captures] +
+        [f"Win logged: {w}" for w in wins]
+    )
+
+    if not all_items:
+        return jsonify({"reflection": "Nothing logged yet this week — but the week isn't over. What's one small thing you can do today?"})
+
+    system = SYSTEM_PROMPT + """
+
+You are writing a warm, personal end-of-week reflection for Seyun.
+
+Rules:
+- 3–5 sentences MAX
+- Start by naming something specific she did — make her feel genuinely seen, not generic
+- Connect her progress to Gwanak Analog or her bigger goal
+- Acknowledge that ADHD makes even small completions real victories
+- End with one energizing forward-looking sentence for next week
+- Warm, direct, real. Not preachy. Not corporate.
+- No bullet points — just flowing sentences
+
+Return JSON only: {"reflection": "..."}"""
+
+    items_text = "\n".join(all_items)
+    try:
+        raw = api_call(
+            [{"role": "user", "content": f"Here's what I accomplished {label}:\n{items_text}\n\nWrite my weekly reflection."}],
+            system=system, max_tokens=300
+        )
+        return jsonify(extract_json(raw))
+    except Exception as e:
+        return auth_err(e)
+
+
 init_db()
 
 if __name__ == '__main__':
