@@ -1043,12 +1043,31 @@ async function doPanic() {
       <div class="pr-section"><div class="pr-lbl">This is not you failing.</div><div class="pr-text">${esc(d.normalize||'')}</div></div>
       <div class="pr-section"><div class="pr-lbl">Right now, try this:</div><div class="pr-text">${esc(d.ground||'')}</div></div>
       ${d.next_step?`<div class="pr-lbl" style="margin-top:8px">When you're ready — ONE small step:</div><div class="pr-next">${esc(d.next_step)}</div>`:''}
+      ${d.next_step?`<div style="margin-top:12px;text-align:center"><button class="btn btn-p btn-sm" onclick="panicToPlan('${esc(d.next_step)}')">↺ Add to day plan & rebuild</button></div>`:''}
     </div>`;
     if(d.breathe){
       const combined=`${d.breathe} ${d.normalize} ${d.ground}${d.next_step?' When ready: '+d.next_step:''}`;
       addBubble('coach',combined); chatHistory.push({role:'assistant',content:combined}); saveData();
     }
+    // Auto-rebuild plan in background so it's ready when they're ready
+    if(d.next_step) {
+      S.lastSchedule = null; // invalidate cache so it rebuilds with new context
+      saveData();
+    }
   } catch { area.innerHTML='<div class="panic-result"><div style="color:var(--red);font-size:12px;text-align:center">Could not reach server.</div></div>'; }
+}
+
+function panicToPlan(nextStep) {
+  // Add the next step as a high-priority today task
+  S.tasks.unshift({ id:uid(), text: nextStep, priority:'high', isToday:true, done:false, createdAt:Date.now(), completedAt:null });
+  saveData(); renderTasks();
+  toast('Added to plan — rebuilding your day…');
+  // Rebuild the schedule and switch to it
+  buildSchedule();
+  // Switch to plan view after a short pause so they see the transition
+  setTimeout(() => {
+    document.querySelector('.plan-col').scrollTo(0,0);
+  }, 400);
 }
 
 function checkGround(el) {
