@@ -383,98 +383,101 @@ JSON only:
 @app.route('/api/schedule', methods=['POST'])
 def build_schedule():
     body = request.json or {}
-    start_time = body.get('startTime', '').strip()   # e.g. "9:30 AM"
-    end_time   = body.get('endTime', '').strip()      # e.g. "6:00 PM"
-    notes      = body.get('notes', '').strip()        # optional user context
+    start_time = body.get('startTime', '').strip()
+    end_time   = body.get('endTime', '').strip()
 
     data = load_data()
-    tasks = data.get('tasks', [])
+
+    # Pull everything Seyun has shared — tasks, dumps, recent chat
+    tasks   = data.get('tasks', [])
     pending = [t for t in tasks if not t.get('done')]
-    today   = [t for t in pending if t.get('isToday')]
-    high    = [t for t in pending if t.get('priority') == 'high' and not t.get('isToday')]
+    dumps   = data.get('brainDumps', [])[:5]  # last 5 brain dumps
+    chat    = data.get('chatHistory', [])[-12:]  # last 12 chat messages
 
-    # Build a task list string for the prompt
-    def task_line(t):
-        p = {'high': '🔴 HIGH', 'medium': '🟡 MED', 'low': '🟢 LOW'}.get(t.get('priority',''), '')
-        today_flag = ' [TODAY]' if t.get('isToday') else ''
-        return f"  - [{t['id']}] {p}{today_flag}: {t['text']}"
+    tasks_text = "\n".join(
+        f"- {'[TODAY] ' if t.get('isToday') else ''}[{t.get('priority','med').upper()}] [{t['id']}] {t['text']}"
+        for t in pending[:12]
+    ) or "No tasks added yet"
 
-    task_text = "TODAY's tasks:\n" + ("\n".join(task_line(t) for t in today) or "  (none marked today)") + \
-                "\n\nHIGH PRIORITY BACKLOG:\n" + ("\n".join(task_line(t) for t in high[:6]) or "  (none)") + \
-                "\n\nOTHER PENDING:\n" + ("\n".join(task_line(t) for t in pending if not t.get('isToday') and t.get('priority') != 'high')[:4] or "  (none)")
+    dumps_text = "\n".join(f"- {d['text'][:200]}" for d in dumps) or "No brain dumps"
+
+    chat_text = "\n".join(
+        f"{m['role'].upper()}: {m['content'][:150]}"
+        for m in chat if m.get('role') in ('user', 'assistant')
+    ) or "No recent conversation"
+
+    habits = data.get('habits', [])
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    weekday = datetime.now().weekday()  # 0=Mon, 6=Sun
+    is_weekday = weekday < 5
+    due_habits = []
+    for h in habits:
+        freq = h.get('freq', 'daily')
+        done_today = today_str in (h.get('completions') or [])
+        if done_today:
+            continue
+        if freq == 'daily' or (freq == 'weekdays' and is_weekday) or freq == 'weekly':
+            due_habits.append(h.get('name', ''))
+    habits_text = "\n".join(f"- {name}" for name in due_habits) or "None due today"
 
     now_str = datetime.now().strftime('%I:%M %p, %A %B %d')
 
     system = SYSTEM_PROMPT + f"""
 
-You are Seyun's personal assistant building her complete day plan.
+You are building Seyun's day plan. Be her personal assistant — warm, simple, clear.
 Current time: {now_str}
-
-YOUR JOB:
-1. Look at her tasks and figure out the BEST order and timing for today
-2. Proactively suggest 1-3 important things she should probably do today that AREN'T in her list yet (based on her goals and typical daily needs)
-3. Pick THE ONE most important thing she must finish today
-4. Build a realistic, ADHD-friendly time-blocked schedule
-
-HARD RULES FOR THE SCHEDULE:
-- Work blocks: 25–45 min MAX (ADHD cap — no exceptions)
-- Mandatory break after every 1–2 work blocks (10–15 min)
-- First block: highest activation or most important task (ADHD momentum rule)
-- No back-to-back high-pressure tasks
-- Leave buffer — don't jam-pack every minute
-- Big/vague tasks: split across multiple blocks
-- Be SPECIFIC in labels: not "work on application" but "Write first paragraph of research statement for Prof. X internship"
-- Time format: 12-hour "9:30 AM"
-
 Schedule window: {start_time or 'now'} → {end_time or '9:00 PM'}
-{('Context from Seyun: ' + notes) if notes else ''}
 
-TASKS AVAILABLE:
-{task_text}
+WHAT SHE HAS ON HER MIND (use ALL of this, not just tasks):
 
-Return ONLY valid JSON (no markdown, no explanation):
+TASKS:
+{tasks_text}
+
+RECURRING HABITS DUE TODAY (slot at least 1-2 of these in):
+{habits_text}
+
+RECENT BRAIN DUMPS (what's been on her mind):
+{dumps_text}
+
+RECENT COACH CONVERSATION (what she's been talking about):
+{chat_text}
+
+YOUR RULES:
+- Read everything above and figure out what actually matters to her today
+- Work blocks: 25–40 min MAX (ADHD — no longer)
+- Break after every 1–2 work blocks (10 min minimum)
+- First block: easiest win to build momentum
+- Keep it realistic — 4 to 6 work blocks max for a day
+- Each label should be one clear, specific sentence she can act on immediately
+- Time format: "9:30 AM"
+
+Return ONLY valid JSON:
 {{
-  "greeting": "2 warm personal sentences — see what she has on her plate, make her feel capable not overwhelmed",
-  "coach_pick": "THE one task she must complete today — be specific, max 15 words",
-  "coach_suggestions": [
-    {{
-      "label": "A specific task she should probably do today (not in her list)",
-      "why": "Why this matters for her goals — 1 sentence",
-      "duration_min": 25
-    }}
-  ],
-  "blocks": [
+  "greeting": "1-2 sentences, warm and personal — acknowledge what's on her mind today, not generic",
+  "items": [
     {{
       "time": "9:00 AM",
-      "end_time": "9:30 AM",
       "duration_min": 30,
-      "task_id": "exact task id from the list, or null",
-      "label": "Specific action for this block (max 14 words)",
+      "label": "One clear thing to do — specific enough to start immediately",
       "type": "work",
-      "tip": "1 short ADHD/OCD-aware tip for this block (max 10 words)"
+      "task_id": "task id if from task list, otherwise null",
+      "note": "One short encouraging or practical note (optional, max 8 words)"
     }},
     {{
       "time": "9:30 AM",
-      "end_time": "9:45 AM",
-      "duration_min": 15,
-      "task_id": null,
-      "label": "Break — step away, get water, stretch",
+      "duration_min": 10,
+      "label": "Break — get up, drink water",
       "type": "break",
-      "tip": "Breaks are how you sustain focus all day"
+      "task_id": null,
+      "note": null
     }}
   ],
-  "total_work_min": 150,
-  "wrap": "One line connecting today's work to buying back Gwanak Analog"
-}}
+  "closing": "One short line — connect today to Gwanak Analog, make it feel worth it"
+}}"""
 
-coach_suggestions should be 1-3 items MAX. Only suggest things that make real sense given her goals and situation. If nothing relevant, return empty array."""
-
-    user_msg = f"Build my full day plan. It's {now_str}. Start: {start_time or 'now'}. End: {end_time or '9 PM'}."
-    if notes:
-        user_msg += f" Note: {notes}"
-
+    user_msg = f"Build my day. It's {now_str}."
     try:
-        raw = api_call([{"role": "user", "content": user_msg}], system=system, max_tokens=2000)
+        raw = api_call([{"role": "user", "content": user_msg}], system=system, max_tokens=1800)
         return jsonify(extract_json(raw))
     except Exception as e:
         return auth_err(e)
