@@ -6,7 +6,12 @@ import json
 import os
 import re
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from flask import Flask, request, jsonify, send_from_directory
+
+ET = ZoneInfo("America/New_York")
+def now_et():
+    return datetime.now(ET)
 
 app = Flask(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -150,7 +155,7 @@ Never: preachy, generic, corporate, or dismissive.
 
 def build_context(data):
     tasks = data.get('tasks', [])
-    now_ms = datetime.now(timezone.utc).timestamp() * 1000
+    now_ms = now_et().timestamp() * 1000
     pending  = [t for t in tasks if not t.get('done')]
     done_today = [t for t in tasks if t.get('done') and now_ms - t.get('completedAt', 0) < 86_400_000]
     high     = [t for t in pending if t.get('priority') == 'high']
@@ -158,7 +163,7 @@ def build_context(data):
     focus_id = data.get('focusTask')
     focus    = next((t for t in tasks if t.get('id') == focus_id and not t.get('done')), None)
 
-    lines = [f"DATE/TIME: {datetime.now().strftime('%A, %B %d, %Y — %I:%M %p')}", ""]
+    lines = [f"DATE/TIME: {now_et().strftime('%A, %B %d, %Y — %I:%M %p ET')}", ""]
     if focus:
         lines += [f"CURRENT FOCUS TASK: {focus['text']}", ""]
     lines.append(f"TODAY'S TASKS ({len(today)} pending):")
@@ -259,7 +264,7 @@ def chat():
 
 @app.route('/api/checkin', methods=['POST'])
 def checkin():
-    hour = datetime.now().hour
+    hour = now_et().hour
     tone = ("morning — help her start strong with her top priorities" if hour < 11 else
             "midday — see how the morning went and re-focus if needed" if hour < 14 else
             "afternoon — push through the last stretch, acknowledge wins" if hour < 18 else
@@ -412,7 +417,7 @@ def build_schedule():
         for p in plate
     ) or "None added"
 
-    now_str = datetime.now().strftime('%I:%M %p, %A %B %d')
+    now_str = now_et().strftime('%I:%M %p ET, %A %B %d')
 
     system = SYSTEM_PROMPT + f"""
 
