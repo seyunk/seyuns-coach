@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seyun's Coach</title>
+  <style>
+    :root {
+      --bg: #0f0f13; --surface: #18181f; --s2: #22222d; --border: #2e2e3a;
+      --accent: #7c6af7; --a2: #e96baa; --green: #4ade80;
+      --yellow: #fbbf24; --red: #f87171; --text: #e8e8f0; --muted: #6b6b80;
+      --r: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; font-size: 15px; }
+
+    /* ── App shell ── */
+    .app { display: grid; grid-template-columns: 1fr 400px; height: 100vh; }
+
+    /* ════════════════════════════════════════
+       LEFT: TODAY'S PLAN (main feature)
+    ════════════════════════════════════════ */
+    .plan-col { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    .plan-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px; }
+    .ph-left { display: flex; flex-direction: column; }
+    .ph-title { font-size: 18px; font-weight: 800; letter-spacing: -.4px; }
+    .ph-date  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .ph-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+
+    .plan-settings { border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+    .ps-inner { padding: 10px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .ps-lbl { font-size: 11px; color: var(--muted); }
+
+    .plan-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+    /* Plan greeting */
+    .plan-greeting { background: linear-gradient(135deg, var(--accent)20, var(--a2)10); border: 1px solid var(--accent)33; border-radius: var(--r); padding: 16px 18px; margin-bottom: 16px; }
+    .pg-text { font-size: 14px; line-height: 1.65; }
+
+    /* Coach pick */
+    .coach-pick { background: var(--surface); border: 2px solid var(--accent)55; border-radius: var(--r); padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 12px; }
+    .cp-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .cp-body { flex: 1; }
+    .cp-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--accent); margin-bottom: 4px; }
+    .cp-text { font-size: 14px; font-weight: 600; line-height: 1.4; }
+
+    /* Coach suggestions */
+    .suggestions-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 8px; }
+    .suggestion-card { background: var(--surface); border: 1px solid var(--a2)33; border-left: 3px solid var(--a2); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }
+    .sc-body { flex: 1; }
+    .sc-label { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .sc-why { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .sc-dur { font-size: 11px; color: var(--a2); margin-top: 4px; }
+    .sc-actions { display: flex; gap: 5px; flex-shrink: 0; align-self: center; }
+    .sc-add { padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 1px solid var(--a2)44; background: var(--a2)18; color: var(--a2); cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .sc-add:hover { background: var(--a2)30; }
+
+    /* Timeline */
+    .timeline-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin: 16px 0 10px; }
+
+    .sched-block { display: flex; gap: 10px; margin-bottom: 6px; align-items: flex-start; }
+    .sb-time { width: 64px; flex-shrink: 0; text-align: right; padding-top: 11px; }
+    .sb-time-txt { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .sb-time-end { font-size: 10px; color: var(--border); }
+    .sb-line { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+    .sb-dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 11px; flex-shrink: 0; }
+    .sb-dot.work   { background: var(--accent); box-shadow: 0 0 0 3px var(--accent)22; }
+    .sb-dot.break  { background: var(--green); box-shadow: 0 0 0 3px var(--green)22; }
+    .sb-dot.buffer { background: var(--muted); }
+    .sb-connector { width: 2px; flex: 1; background: var(--border); margin-top: 4px; min-height: 16px; }
+    .sb-card { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; transition: border-color .15s; }
+    .sb-card.work   { border-left: 3px solid var(--accent); }
+    .sb-card.break  { border-left: 3px solid var(--green); background: var(--green)05; }
+    .sb-card.buffer { border-left: 3px solid var(--muted); opacity: .65; }
+    .sb-card:hover  { border-color: var(--accent)55; }
+    .sb-card.now    { border-color: var(--accent); background: var(--accent)0a; }
+    .sb-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+    .sb-label { font-size: 13.5px; font-weight: 600; line-height: 1.35; flex: 1; }
+    .sb-dur   { font-size: 10px; color: var(--muted); white-space: nowrap; padding-top: 2px; flex-shrink: 0; }
+    .sb-tip   { font-size: 11.5px; color: var(--muted); margin-top: 5px; line-height: 1.4; font-style: italic; }
+    .sb-focus { margin-top: 8px; font-size: 11px; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--accent)44; background: var(--accent)15; color: var(--accent); cursor: pointer; font-weight: 600; transition: all .15s; }
+    .sb-focus:hover { background: var(--accent)25; }
+
+    /* Plan footer */
+    .plan-wrap { background: var(--accent)0e; border: 1px solid var(--accent)22; border-radius: var(--r); padding: 11px 14px; margin-top: 12px; font-size: 12px; color: var(--accent); font-style: italic; text-align: center; }
+    .plan-stats { display: flex; gap: 8px; margin-bottom: 16px; }
+    .pstat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; text-align: center; }
+    .pstat-n { font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .pstat-l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+
+    .plan-loading { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .plan-loading-icon { font-size: 30px; margin-bottom: 12px; animation: spin 2s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .plan-loading-t { font-size: 14px; margin-bottom: 4px; }
+    .plan-loading-s { font-size: 12px; }
+
+    .plan-empty { text-align: center; padding: 50px 20px; }
+    .plan-empty-i { font-size: 36px; margin-bottom: 14px; }
+    .plan-empty-t { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .plan-empty-s { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ════════════════════════════════════════
+       RIGHT: COACH CHAT + TOOLS
+    ════════════════════════════════════════ */
+    .side-col { display: flex; flex-direction: column; height: 100vh; border-left: 1px solid var(--border); overflow: hidden; }
+
+    .side-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; }
+    .sh-badges { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+    .badge-adhd { background: var(--yellow)22; color: var(--yellow); border: 1px solid var(--yellow)44; }
+    .badge-ocd  { background: var(--a2)22;     color: var(--a2);     border: 1px solid var(--a2)44; }
+    .badge-goal { background: var(--accent)22; color: var(--accent); border: 1px solid var(--accent)44; }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .dot.on { background: var(--yellow); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 1; padding: 10px 4px; font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; color: var(--muted); border: none; background: none; border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap; min-width: 58px; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--text); }
+    .panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* Chat panel */
+    .quick-btns { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 5px; flex-wrap: wrap; flex-shrink: 0; }
+    .qb { font-size: 11px; padding: 4px 9px; border-radius: 20px; background: var(--s2); border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all .15s; font-weight: 500; white-space: nowrap; }
+    .qb:hover { border-color: var(--accent); color: var(--accent); background: var(--accent)11; }
+    .qb.panic { background: var(--red)22; border-color: var(--red)44; color: var(--red); }
+    .qb.panic:hover { background: var(--red)33; }
+
+    .messages { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { display: flex; gap: 8px; align-items: flex-start; }
+    .msg.user { flex-direction: row-reverse; }
+    .mav { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+    .msg.coach .mav { background: var(--accent)22; color: var(--accent); }
+    .msg.user  .mav { background: var(--a2)22;     color: var(--a2); }
+    .bbl { max-width: 90%; padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.6; }
+    .msg.coach .bbl { background: var(--s2); border: 1px solid var(--border); border-top-left-radius: 3px; }
+    .msg.user  .bbl { background: var(--accent)1e; border: 1px solid var(--accent)33; border-top-right-radius: 3px; }
+    .bbl p { margin-bottom: 5px; } .bbl p:last-child { margin-bottom: 0; }
+    .bbl ul { padding-left: 16px; margin: 4px 0; } .bbl li { margin-bottom: 3px; }
+    .bbl strong { font-weight: 600; }
+    .sys-msg { background: var(--accent)0f; border: 1px solid var(--accent)22; border-radius: 7px; padding: 7px 11px; font-size: 11px; color: var(--muted); text-align: center; font-style: italic; }
+
+    .typing-bbl { padding: 9px 13px; }
+    .td-row { display: flex; gap: 4px; align-items: center; }
+    .td { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
+    .td:nth-child(2){animation-delay:.2s} .td:nth-child(3){animation-delay:.4s}
+    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+    .inp-area { padding: 10px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .inp-row { display: flex; gap: 6px; }
+    .chat-ta { flex: 1; background: var(--s2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; resize: none; max-height: 100px; font-family: inherit; line-height: 1.4; transition: border-color .15s; }
+    .chat-ta:focus { border-color: var(--accent); }
+    .send { width: 35px; height: 35px; border-radius: 8px; background: var(--accent); border: none; color: white; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; align-self: flex-end; transition: background .15s; }
+    .send:hover { background: #6a59e0; }
+
+    /* Shared panel styles */
+    .zone { padding: 12px 14px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 10px; }
+    .card-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 9px; }
+    .btn { padding: 6px 13px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .btn-p { background: var(--accent); color: white; } .btn-p:hover { background: #6a59e0; }
+    .btn-g { background: var(--s2); color: var(--text); border: 1px solid var(--border); }
+    .btn-g:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-sm { padding: 4px 9px; font-size: 11px; }
+    .btn-red { background: var(--red)22; color: var(--red); border: 1px solid var(--red)44; }
+    .btn-red:hover { background: var(--red)33; }
+    .bi { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; padding: 2px 5px; border-radius: 5px; }
+    .bi:hover { background: var(--s2); color: var(--text); }
+    .inp { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: 12px; outline: none; transition: border-color .15s; }
+    .inp:focus { border-color: var(--accent); }
+    .sel { background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: 12px; outline: none; cursor: pointer; }
+    .empty-st { text-align: center; padding: 24px 12px; color: var(--muted); font-size: 12px; }
+    .empty-st-i { font-size: 24px; margin-bottom: 7px; }
+
+    /* Tasks */
+    .add-row { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+    .filter-row { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+    .ftab { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; cursor: pointer; background: var(--s2); border: 1px solid var(--border); color: var(--muted); transition: all .15s; }
+    .ftab.active { background: var(--accent)22; border-color: var(--accent)44; color: var(--accent); }
+    .ti { display: flex; align-items: flex-start; gap: 8px; padding: 7px; border-radius: 8px; border: 1px solid transparent; transition: all .15s; }
+    .ti:hover { background: var(--s2); border-color: var(--border); }
+    .ti.done .titxt { text-decoration: line-through; color: var(--muted); }
+    .ti.focused-t { border-color: var(--accent)44; background: var(--accent)08; }
+    .cb { width: 15px; height: 15px; border-radius: 4px; border: 2px solid var(--border); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 8px; transition: all .15s; }
+    .cb:hover { border-color: var(--accent); }
+    .cb.chk { background: var(--accent); border-color: var(--accent); color: white; }
+    .tibody { flex: 1; }
+    .titxt { font-size: 12px; line-height: 1.4; }
+    .titags { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; }
+    .tg { font-size: 9px; padding: 1px 5px; border-radius: 20px; font-weight: 500; }
+    .th { background: var(--red)22;    color: var(--red); }
+    .tm { background: var(--yellow)22; color: var(--yellow); }
+    .tl { background: var(--green)22;  color: var(--green); }
+    .tt { background: var(--yellow)22; color: var(--yellow); }
+    .tf { background: var(--accent)22; color: var(--accent); }
+    .tiacts { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+    .ti:hover .tiacts { opacity: 1; }
+
+    /* Brain Dump */
+    .dump-ta { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; color: var(--text); font-size: 13px; line-height: 1.6; resize: none; min-height: 100px; outline: none; font-family: inherit; transition: border-color .15s; }
+    .dump-ta:focus { border-color: var(--accent); }
+    .da-box { background: var(--surface); border: 1px solid var(--accent)33; border-radius: var(--r); padding: 12px; margin-top: 8px; }
+    .da-enc { font-size: 12px; line-height: 1.55; margin-bottom: 10px; }
+    .da-cat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 5px; margin-top: 7px; }
+    .da-item { display: flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 6px; margin-bottom: 3px; background: var(--s2); font-size: 12px; }
+    .da-add { background: none; border: 1px solid var(--accent)44; color: var(--accent); border-radius: 4px; font-size: 9px; font-weight: 700; padding: 2px 6px; cursor: pointer; transition: all .15s; }
+    .da-add:hover { background: var(--accent)22; }
+    .da-anchor { font-size: 11px; color: var(--accent); font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .da-loading { text-align: center; padding: 16px; color: var(--muted); font-size: 12px; }
+    .dump-hist-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 10px 0 5px; }
+    .dump-i { display: flex; align-items: flex-start; gap: 6px; padding: 6px 7px; border-radius: 7px; border: 1px solid transparent; margin-bottom: 3px; transition: all .15s; }
+    .dump-i:hover { background: var(--s2); border-color: var(--border); }
+    .dump-itxt { flex: 1; font-size: 11px; color: var(--muted); }
+    .dump-iacts { opacity: 0; transition: opacity .15s; }
+    .dump-i:hover .dump-iacts { opacity: 1; }
+
+    /* Calendar */
+    .cal-zone { padding: 12px 14px; }
+    .cal-day { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; margin-bottom: 8px; }
+    .cal-day-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .cal-day-name { font-size: 12px; font-weight: 700; }
+    .cal-day-date { font-size: 10px; color: var(--muted); }
+    .cal-count { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; background: var(--green)22; color: var(--green); }
+    .cal-count.zero { background: var(--s2); color: var(--muted); }
+    .cal-task { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+    .cal-task:last-child { border-bottom: none; }
+    .cal-check { color: var(--green); font-size: 11px; }
+    .cal-none { font-size: 11px; color: var(--muted); font-style: italic; padding: 3px 0; }
+
+    /* Panic */
+    .panic-zone { padding: 12px 14px; }
+    .panic-banner { background: linear-gradient(135deg,var(--red)20,var(--a2)0c); border: 1px solid var(--red)44; border-radius: var(--r); padding: 14px; margin-bottom: 12px; text-align: center; }
+    .pb-title { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+    .pb-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+    .panic-in { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 12px; outline: none; resize: none; min-height: 72px; font-family: inherit; line-height: 1.5; transition: border-color .15s; margin-bottom: 8px; }
+    .panic-in:focus { border-color: var(--red)88; }
+    .panic-result { background: var(--surface); border: 1px solid var(--red)33; border-radius: var(--r); padding: 14px; margin-bottom: 10px; }
+    .pr-section { margin-bottom: 10px; }
+    .pr-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 4px; }
+    .pr-breathe { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .pr-text { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .pr-next { background: var(--accent)22; border: 1px solid var(--accent)33; border-radius: 7px; padding: 9px 11px; font-size: 12px; color: var(--accent); font-weight: 500; }
+    .grounding-box { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 10px; }
+    .gb-title { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .gb-item { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; cursor: pointer; }
+    .gb-item:last-child { border-bottom: none; }
+    .gb-item:hover { color: var(--accent); }
+    .gb-done { color: var(--green); font-size: 13px; }
+    .gb-item:not(.checked) .gb-done { opacity: 0; }
+
+    /* Focus panel */
+    .focus-cur { background: var(--s2); border: 1px solid var(--accent)33; border-radius: var(--r); padding: 12px; margin-bottom: 10px; text-align: center; }
+    .fc-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 4px; }
+    .fc-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .fc-sub  { font-size: 11px; color: var(--muted); }
+    .just-start { background: linear-gradient(135deg,var(--accent)18,var(--a2)08); border: 1px solid var(--accent)44; border-radius: var(--r); padding: 13px; margin-bottom: 10px; text-align: center; }
+    .js-t { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .js-s { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .js-timer { font-size: 36px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -2px; color: var(--accent); margin-bottom: 10px; }
+    .js-btns { display: flex; gap: 6px; justify-content: center; }
+    .bd-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 10px; }
+    .bd-hd { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+    .step-row { display: flex; align-items: flex-start; gap: 7px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .step-row:last-of-type { border-bottom: none; }
+    .scb { width: 15px; height: 15px; border-radius: 4px; border: 2px solid var(--border); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 8px; transition: all .15s; margin-top: 2px; }
+    .scb.done { background: var(--accent); border-color: var(--accent); color: white; }
+    .stxt { font-size: 12px; line-height: 1.4; flex: 1; }
+    .stxt.done { text-decoration: line-through; color: var(--muted); }
+    .bd-enc { font-size: 11px; color: var(--accent); margin-top: 7px; text-align: center; font-style: italic; }
+    .elapsed-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; text-align: center; }
+    .el-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+    .el-num { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--muted); margin-bottom: 4px; }
+    .el-sub { font-size: 10px; color: var(--muted); margin-bottom: 9px; }
+    .el-btns { display: flex; gap: 5px; justify-content: center; }
+
+    /* Modal */
+    .ov { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .ov.hidden { display: none; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; width: 400px; max-width: 90vw; }
+    .modal-t { font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+    .modal-s { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+    .modal-inp { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; color: var(--text); font-size: 13px; outline: none; margin-bottom: 12px; font-family: monospace; }
+    .modal-inp:focus { border-color: var(--accent); }
+    .modal-row { display: flex; justify-content: space-between; align-items: center; }
+    .modal-lnk { font-size: 12px; color: var(--accent); text-decoration: none; }
+
+    /* Toasts */
+    .toasts { position: fixed; bottom: 18px; right: 18px; z-index: 999; display: flex; flex-direction: column; gap: 6px; }
+    .toast { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 8px 12px; font-size: 12px; max-width: 240px; animation: fi .2s ease; box-shadow: 0 4px 18px #0008; }
+    @keyframes fi { from{opacity:0;transform:translateX(8px)} to{opacity:1;transform:none} }
+
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- API Key Modal -->
+<div class="ov" id="key-modal">
+  <div class="modal">
+    <div class="modal-t">🔑 Connect Your Coach</div>
+    <div class="modal-s">Your coach runs on Claude Opus. Your API key goes only to your local server — never anywhere else.</div>
+    <input class="modal-inp" id="api-key-in" type="password" placeholder="sk-ant-…" onkeydown="if(event.key==='Enter')saveKey()">
+    <div class="modal-row">
+      <a class="modal-lnk" href="https://console.anthropic.com" target="_blank">Get API key →</a>
+      <button class="btn btn-p" onclick="saveKey()">Start Coaching</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ══════════════════════════════════
+       LEFT: TODAY'S PLAN (main feature)
+  ══════════════════════════════════ -->
+  <div class="plan-col">
+    <div class="plan-head">
+      <div class="ph-left">
+        <div class="ph-title">🗓 Today's Plan</div>
+        <div class="ph-date" id="ph-date"></div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn btn-g btn-sm" onclick="togglePlanSettings()" id="settings-btn">⚙ Settings</button>
+        <button class="btn btn-p btn-sm" onclick="buildSchedule()" id="rebuild-btn">✨ Build Day</button>
+      </div>
+    </div>
+
+    <!-- Collapsible settings -->
+    <div class="plan-settings" id="plan-settings" style="display:none">
+      <div class="ps-inner">
+        <span class="ps-lbl">From</span>
+        <input class="inp" id="sched-start" type="time" style="width:105px">
+        <span class="ps-lbl">to</span>
+        <input class="inp" id="sched-end" type="time" style="width:105px">
+        <textarea class="inp" id="sched-notes" placeholder="Any context (meeting at 2pm, low energy, etc.)" style="flex:1;min-width:160px;resize:none;height:34px;padding-top:6px;font-size:11px"></textarea>
+      </div>
+    </div>
+
+    <div class="plan-body" id="plan-body">
+      <div class="plan-empty">
+        <div class="plan-empty-i">🗓</div>
+        <div class="plan-empty-t">Your day planner is ready</div>
+        <div class="plan-empty-s">Hit <strong>✨ Build Day</strong> and your AI coach will plan your whole day — tasks, breaks, what order, how long. Everything.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       RIGHT: COACH CHAT + TOOLS
+  ══════════════════════════════════ -->
+  <div class="side-col">
+
+    <div class="side-head">
+      <div class="sh-badges">
+        <span class="badge badge-adhd">ADHD</span>
+        <span class="badge badge-ocd">OCD</span>
+        <span class="badge badge-goal">🏢 Gwanak Analog</span>
+      </div>
+      <div class="dot" id="dot"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('chat')" id="tab-chat">💬 Coach</button>
+      <button class="tab" onclick="showTab('focus')" id="tab-focus">⚡ Focus</button>
+      <button class="tab" onclick="showTab('tasks')" id="tab-tasks">✅ Tasks</button>
+      <button class="tab" onclick="showTab('dump')" id="tab-dump">💭 Dump</button>
+      <button class="tab" onclick="showTab('calendar')" id="tab-calendar">📅 Week</button>
+      <button class="tab" onclick="showTab('panic')" id="tab-panic" style="color:var(--red)">🆘 Calm</button>
+    </div>
+
+    <!-- ── COACH CHAT ── -->
+    <div class="panel active" id="panel-chat">
+      <div class="quick-btns">
+        <button class="qb" onclick="ask('What should I focus on right now?')">📍 What now?</button>
+        <button class="qb" onclick="ask(\"I'm stuck and can't start anything.\")">🧊 Stuck</button>
+        <button class="qb" onclick="ask('Remind me why Gwanak Analog matters and why I can do this.')">🔥 Motivate</button>
+        <button class="qb" onclick="ask('I just finished something!')">🎉 Done!</button>
+        <button class="qb panic" onclick="triggerPanic()">🆘 Panic</button>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="inp-area">
+        <div class="inp-row">
+          <textarea class="chat-ta" id="chat-ta" placeholder="Talk to your coach… (Enter to send)" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+          <button class="send" onclick="send()">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FOCUS ── -->
+    <div class="panel" id="panel-focus">
+      <div class="zone">
+        <div class="focus-cur">
+          <div class="fc-lbl">🔥 Current Focus</div>
+          <div class="fc-name" id="fc-name">Nothing selected yet</div>
+          <div class="fc-sub"  id="fc-sub">Tasks tab → tap ⚡ to lock in</div>
+        </div>
+        <div class="just-start">
+          <div class="js-t">Just Start — 2 Minutes</div>
+          <div class="js-s">Commit to just 2 min. Activation energy is an ADHD thing — not a you thing.</div>
+          <div class="js-timer" id="js-disp">2:00</div>
+          <div class="js-btns">
+            <button class="btn btn-p" id="js-btn" onclick="jsToggle()">▶ I'll try 2 min</button>
+            <button class="btn btn-g" onclick="jsReset()">↺</button>
+          </div>
+        </div>
+        <div class="bd-card">
+          <div class="bd-hd">🧩 Break It Down <button class="btn btn-g btn-sm" onclick="doBreakdown()" id="bd-btn">Ask AI</button></div>
+          <div id="bd-content"><div style="font-size:11px;color:var(--muted)">Lock in a task first, then ask AI to break it into tiny steps.</div></div>
+        </div>
+        <div class="elapsed-card">
+          <div class="el-lbl">Time in Flow</div>
+          <div class="el-num" id="el-disp">0:00</div>
+          <div class="el-sub">Counts up — no pressure, just awareness</div>
+          <div class="el-btns">
+            <button class="btn btn-g btn-sm" id="el-btn" onclick="elToggle()">▶ Start</button>
+            <button class="btn btn-g btn-sm" onclick="elReset()">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TASKS ── -->
+    <div class="panel" id="panel-tasks">
+      <div class="zone">
+        <div class="add-row">
+          <input class="inp" style="flex:1;min-width:100px" id="task-in" type="text" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
+          <select class="sel" id="task-pri"><option value="high">🔴 High</option><option value="medium" selected>🟡 Med</option><option value="low">🟢 Low</option></select>
+          <select class="sel" id="task-when"><option value="true">📅 Today</option><option value="false">Later</option></select>
+          <button class="btn btn-p" onclick="addTask()">+</button>
+        </div>
+        <div class="filter-row">
+          <div class="ftab active" onclick="setFilter('all',this)">All</div>
+          <div class="ftab" onclick="setFilter('today',this)">Today</div>
+          <div class="ftab" onclick="setFilter('high',this)">🔴 High</div>
+          <div class="ftab" onclick="setFilter('done',this)">✓ Done</div>
+        </div>
+        <div id="task-list"></div>
+      </div>
+    </div>
+
+    <!-- ── BRAIN DUMP ── -->
+    <div class="panel" id="panel-dump">
+      <div class="zone">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:7px;line-height:1.5">Get it ALL out. Every worry, idea, task, fear. Your coach will sort it.</div>
+        <textarea class="dump-ta" id="dump-ta" placeholder="Type everything on your mind — worries, ideas, tasks, random thoughts. No judgment.&#10;&#10;Cmd+Enter to analyze."
+          onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter')saveDump()"></textarea>
+        <div style="display:flex;justify-content:flex-end;gap:5px;margin-top:7px">
+          <button class="btn btn-g btn-sm" onclick="document.getElementById('dump-ta').value=''">Clear</button>
+          <button class="btn btn-p btn-sm" onclick="saveDump()">Analyze (⌘↵)</button>
+        </div>
+        <div id="dump-analysis"></div>
+        <div class="dump-hist-lbl">Previous Dumps</div>
+        <div id="dump-list"></div>
+      </div>
+    </div>
+
+    <!-- ── CALENDAR ── -->
+    <div class="panel" id="panel-calendar">
+      <div class="cal-zone" id="cal-zone"></div>
+    </div>
+
+    <!-- ── PANIC / CALM ── -->
+    <div class="panel" id="panel-panic">
+      <div class="panic-zone">
+        <div class="panic-banner">
+          <div class="pb-title">🆘 Panic Mode</div>
+          <div class="pb-sub">You're safe. This overwhelm is your ADHD + OCD talking — not reality. Let's slow down.</div>
+        </div>
+        <div class="grounding-box">
+          <div class="gb-title">👁 Ground Yourself First (30 sec)</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Name 3 things you can see right now</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Feel your feet on the floor</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Slow breath — in for 4, out for 6</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Drink a sip of water</div>
+        </div>
+        <div class="card">
+          <div class="card-lbl">What's triggering this? (optional)</div>
+          <textarea class="panic-in" id="panic-in" placeholder="Tell me what's going on. What feels out of control?"></textarea>
+          <button class="btn btn-red" style="width:100%" onclick="doPanic()">🆘 Help me calm down + find ONE next step</button>
+        </div>
+        <div id="panic-result"></div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">When you feel a little steadier…</div>
+          <button class="btn btn-g" onclick="showTab('focus')">⚡ Go to Focus Mode</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null };
+let filter = 'all';
+let chatHistory = [];
+let planSettingsOpen = false;
+
+// Timers
+let jsInt = null, jsOn = false, jsSec = 120;
+let elInt = null, elOn = false, elSec = 0;
+let stepsDone = [];
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+async function boot() {
+  // Set header date
+  document.getElementById('ph-date').textContent = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric'
+  });
+
+  // Set default times
+  const now = new Date();
+  const pad = n => n.toString().padStart(2,'0');
+  document.getElementById('sched-start').value = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('sched-end').value = '21:00';
+
+  // Auth — if server already has ANTHROPIC_API_KEY set, skip the modal entirely
+  try {
+    const st = await fetch('/api/status').then(r => r.json());
+    if (!st.keyConfigured) {
+      const key = localStorage.getItem('coach_key');
+      if (key) { const ok = await trySetKey(key); if (!ok) showKeyModal(); }
+      else showKeyModal();
+    }
+  } catch {
+    const key = localStorage.getItem('coach_key');
+    if (key) { const ok = await trySetKey(key); if (!ok) showKeyModal(); }
+    else showKeyModal();
+  }
+
+  await loadData();
+  renderTasks();
+  renderFocus();
+  renderDumps();
+  renderCalendar();
+
+  // Restore chat history
+  if (S.chatHistory && S.chatHistory.length) {
+    chatHistory = S.chatHistory.slice(-40);
+    const recent = chatHistory.slice(-8);
+    for (const m of recent) {
+      if (m.role === 'user' || m.role === 'assistant') {
+        addBubble(m.role === 'assistant' ? 'coach' : 'user', m.content, false);
+      }
+    }
+    if (recent.length) {
+      document.getElementById('messages').insertAdjacentHTML('afterbegin',
+        '<div class="sys-msg">↑ Conversation history loaded</div>');
+    }
+  }
+
+  // Auto-build schedule: use cache if built today, otherwise generate
+  const today = new Date().toDateString();
+  if (S.lastSchedule && S.lastSchedule.date === today && S.lastSchedule.data) {
+    renderSchedule(S.lastSchedule.data);
+  } else {
+    setTimeout(buildSchedule, 800);
+  }
+
+  // Auto check-in in chat
+  setTimeout(doCheckin, 2000);
+}
+
+async function saveKey() {
+  const key = document.getElementById('api-key-in').value.trim();
+  if (!key) return;
+  const ok = await trySetKey(key);
+  if (ok) {
+    document.getElementById('key-modal').classList.add('hidden');
+    setTimeout(buildSchedule, 400);
+    setTimeout(doCheckin, 1200);
+  } else toast('Could not connect — check your key');
+}
+
+async function trySetKey(key) {
+  try {
+    const r = await fetch('/api/setkey', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key}) });
+    const d = await r.json();
+    if (d.ok) { localStorage.setItem('coach_key', key); return true; }
+    return false;
+  } catch { return false; }
+}
+
+function showKeyModal() { document.getElementById('key-modal').classList.remove('hidden'); }
+
+async function loadData() {
+  try {
+    const r = await fetch('/api/tasks');
+    S = { ...S, ...(await r.json()) };
+  } catch {}
+}
+
+async function saveData() {
+  try {
+    const payload = { ...S, chatHistory: chatHistory.slice(-60) };
+    await fetch('/api/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  } catch {}
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+// ═══════════════════════════════════════════════════════
+// PLAN SETTINGS TOGGLE
+// ═══════════════════════════════════════════════════════
+function togglePlanSettings() {
+  planSettingsOpen = !planSettingsOpen;
+  document.getElementById('plan-settings').style.display = planSettingsOpen ? 'block' : 'none';
+  document.getElementById('settings-btn').textContent = planSettingsOpen ? '✕ Close' : '⚙ Settings';
+}
+
+function fmtTime12(t24) {
+  if (!t24) return '';
+  const [h, m] = t24.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${m.toString().padStart(2,'0')} ${ampm}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'calendar') renderCalendar();
+}
+
+// ═══════════════════════════════════════════════════════
+// SCHEDULE — MAIN FEATURE
+// ═══════════════════════════════════════════════════════
+async function buildSchedule() {
+  const startRaw = document.getElementById('sched-start').value;
+  const endRaw   = document.getElementById('sched-end').value;
+  const notes    = document.getElementById('sched-notes')?.value.trim() || '';
+  const body = document.getElementById('plan-body');
+  const btn  = document.getElementById('rebuild-btn');
+
+  btn.textContent = '⏳ Building…'; btn.disabled = true;
+  body.innerHTML = `<div class="plan-loading">
+    <div class="plan-loading-icon">⚙️</div>
+    <div class="plan-loading-t">Building your day…</div>
+    <div class="plan-loading-s">Reading your tasks, figuring out the best order,<br>scheduling breaks. Give me a moment.</div>
+  </div>`;
+
+  try {
+    const r = await fetch('/api/schedule', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ startTime: fmtTime12(startRaw), endTime: fmtTime12(endRaw), notes })
+    });
+    const d = await r.json();
+    if (d.needsKey) { showKeyModal(); body.innerHTML=''; btn.textContent='✨ Build Day'; btn.disabled=false; return; }
+    renderSchedule(d);
+
+    // Cache for today
+    S.lastSchedule = { date: new Date().toDateString(), data: d };
+    saveData();
+
+    // Chat notification
+    const workBlocks = (d.blocks||[]).filter(b=>b.type==='work').length;
+    const wrapMsg = d.greeting ? d.greeting.split('.')[0] + `. I've lined up ${workBlocks} focused blocks for you today.` : `Your day is planned — ${workBlocks} work blocks lined up.`;
+    addBubble('coach', wrapMsg);
+    chatHistory.push({ role:'assistant', content: wrapMsg });
+    saveData();
+  } catch(e) {
+    body.innerHTML = `<div class="plan-loading" style="color:var(--red)">⚠️ Could not build schedule — is the server running?<br><button class="btn btn-g btn-sm" style="margin-top:12px" onclick="buildSchedule()">Try again</button></div>`;
+  }
+
+  btn.textContent = '↺ Rebuild'; btn.disabled = false;
+}
+
+function renderSchedule(d) {
+  const body = document.getElementById('plan-body');
+  const blocks = d.blocks || [];
+  const workMin   = d.total_work_min || blocks.filter(b=>b.type==='work').reduce((s,b)=>s+b.duration_min,0);
+  const workCount = blocks.filter(b=>b.type==='work').length;
+  const breakCount = blocks.filter(b=>b.type==='break').length;
+
+  // Determine current block
+  const now = new Date();
+
+  // Stats
+  const stats = `<div class="plan-stats">
+    <div class="pstat"><div class="pstat-n">${workCount}</div><div class="pstat-l">Blocks</div></div>
+    <div class="pstat"><div class="pstat-n">${Math.round(workMin/60*10)/10}h</div><div class="pstat-l">Focus</div></div>
+    <div class="pstat"><div class="pstat-n">${breakCount}</div><div class="pstat-l">Breaks</div></div>
+  </div>`;
+
+  // Greeting
+  const greeting = d.greeting
+    ? `<div class="plan-greeting"><div class="pg-text">${esc(d.greeting)}</div></div>` : '';
+
+  // Coach pick
+  const pick = d.coach_pick
+    ? `<div class="coach-pick"><div class="cp-icon">🎯</div><div class="cp-body"><div class="cp-lbl">Coach's Pick — Most Important Today</div><div class="cp-text">${esc(d.coach_pick)}</div></div></div>` : '';
+
+  // Coach suggestions
+  let suggestionsHtml = '';
+  const suggs = (d.coach_suggestions || []).filter(s => s && s.label);
+  if (suggs.length) {
+    suggestionsHtml = `<div class="suggestions-lbl">💡 Coach Suggestions — Things you should probably do today</div>` +
+      suggs.map((s, i) => `<div class="suggestion-card">
+        <div class="sc-body">
+          <div class="sc-label">${esc(s.label)}</div>
+          ${s.why ? `<div class="sc-why">${esc(s.why)}</div>` : ''}
+          ${s.duration_min ? `<div class="sc-dur">~${s.duration_min} min</div>` : ''}
+        </div>
+        <div class="sc-actions">
+          <button class="sc-add" onclick="addSuggestion('${esc(s.label)}', this)">+ Add to Today</button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Timeline blocks
+  const timeline = blocks.length
+    ? `<div class="timeline-lbl">Your Schedule</div>` +
+      blocks.map((b, i) => {
+        const isLast = i === blocks.length - 1;
+        const type = b.type || 'work';
+        const focusBtn = type === 'work' && b.task_id
+          ? `<button class="sb-focus" onclick="lockFocusFromSched('${b.task_id}')">⚡ Focus this now</button>` : '';
+        return `<div class="sched-block">
+          <div class="sb-time">
+            <div class="sb-time-txt">${esc(b.time||'')}</div>
+          </div>
+          <div class="sb-line">
+            <div class="sb-dot ${type}"></div>
+            ${!isLast ? '<div class="sb-connector"></div>' : ''}
+          </div>
+          <div class="sb-card ${type}">
+            <div class="sb-top">
+              <div class="sb-label">${esc(b.label||'')}</div>
+              <div class="sb-dur">${b.duration_min} min</div>
+            </div>
+            ${b.tip ? `<div class="sb-tip">💡 ${esc(b.tip)}</div>` : ''}
+            ${focusBtn}
+          </div>
+        </div>`;
+      }).join('')
+    : '';
+
+  const wrap = d.wrap
+    ? `<div class="plan-wrap">🏢 ${esc(d.wrap)}</div>` : '';
+
+  const rebuild = `<div style="text-align:center;padding:16px 0">
+    <button class="btn btn-g btn-sm" onclick="buildSchedule()">↺ Rebuild with changes</button>
+  </div>`;
+
+  body.innerHTML = greeting + pick + suggestionsHtml + stats + timeline + wrap + rebuild;
+}
+
+function addSuggestion(label, btn) {
+  S.tasks.unshift({ id:uid(), text:label, priority:'high', isToday:true, done:false, createdAt:Date.now(), completedAt:null });
+  saveData(); renderTasks();
+  btn.textContent = '✓ Added'; btn.disabled = true;
+  toast('Added to today ✅');
+}
+
+function lockFocusFromSched(id) {
+  S.focusTask = id; saveData(); renderFocus(); showTab('focus');
+  toast('Locked in ⚡');
+}
+
+// ═══════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════
+async function send() {
+  const el = document.getElementById('chat-ta');
+  const text = el.value.trim(); if (!text) return;
+  el.value = ''; el.style.height = 'auto';
+  showTab('chat');
+  addBubble('user', text);
+  chatHistory.push({ role:'user', content: text });
+  await callCoach();
+}
+
+async function ask(prompt) {
+  showTab('chat');
+  addBubble('user', prompt);
+  chatHistory.push({ role:'user', content: prompt });
+  await callCoach();
+}
+
+async function doCheckin() {
+  setThinking(true);
+  try {
+    const r = await fetch('/api/checkin', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const d = await r.json();
+    if (d.needsKey) { showKeyModal(); return; }
+    if (d.content) { addBubble('coach', d.content); chatHistory.push({ role:'assistant', content: d.content }); }
+  } catch {}
+  setThinking(false);
+}
+
+async function callCoach() {
+  setThinking(true);
+  const tid = addTyping();
+  try {
+    const r = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: chatHistory })
+    });
+    const d = await r.json();
+    rmEl(tid);
+    if (d.needsKey) { showKeyModal(); setThinking(false); return; }
+    if (d.content) {
+      addBubble('coach', d.content);
+      chatHistory.push({ role:'assistant', content: d.content });
+      if (chatHistory.length > 60) chatHistory = chatHistory.slice(-60);
+      saveData();
+    }
+  } catch { rmEl(tid); addBubble('coach', '⚠️ Can\'t reach the server. Is it running?'); }
+  setThinking(false);
+}
+
+function addBubble(role, text, scroll = true) {
+  const el = document.getElementById('messages');
+  const d = document.createElement('div');
+  d.className = `msg ${role === 'user' ? 'user' : 'coach'}`;
+  d.innerHTML = `<div class="mav">${role==='coach'?'🎯':'👤'}</div><div class="bbl">${fmt(text)}</div>`;
+  el.appendChild(d);
+  if (scroll) el.scrollTop = el.scrollHeight;
+}
+
+function addTyping() {
+  const el = document.getElementById('messages');
+  const id = 'ty' + Date.now();
+  const d = document.createElement('div');
+  d.id = id; d.className = 'msg coach';
+  d.innerHTML = `<div class="mav">🎯</div><div class="bbl typing-bbl"><div class="td-row"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+  return id;
+}
+
+function rmEl(id) { document.getElementById(id)?.remove(); }
+function setThinking(v) { document.getElementById('dot').className = 'dot' + (v?' on':''); }
+
+function fmt(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^[-•]\s(.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n\n+/g,'</p><p>').replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+// ═══════════════════════════════════════════════════════
+// TASKS
+// ═══════════════════════════════════════════════════════
+function addTask() {
+  const el = document.getElementById('task-in');
+  const text = el.value.trim(); if (!text) return;
+  S.tasks.unshift({ id:uid(), text, priority: document.getElementById('task-pri').value,
+    isToday: document.getElementById('task-when').value === 'true', done:false, createdAt:Date.now(), completedAt:null });
+  el.value = ''; saveData(); renderTasks(); toast('Added ✓');
+}
+
+function toggleTask(id) {
+  const t = S.tasks.find(t=>t.id===id); if (!t) return;
+  t.done = !t.done; t.completedAt = t.done ? Date.now() : null;
+  saveData(); renderTasks(); renderFocus(); renderCalendar();
+  if (t.done) toast('Done! 🎉');
+}
+
+function delTask(id) { S.tasks = S.tasks.filter(t=>t.id!==id); saveData(); renderTasks(); }
+
+function lockFocus(id) {
+  S.focusTask = id; saveData(); renderFocus(); showTab('focus');
+  toast('Locked in ⚡');
+}
+
+function renderTasks() {
+  const el = document.getElementById('task-list'); if (!el) return;
+  let tasks = [...S.tasks];
+  if (filter === 'today') tasks = tasks.filter(t => t.isToday && !t.done);
+  else if (filter === 'high') tasks = tasks.filter(t => t.priority==='high' && !t.done);
+  else if (filter === 'done') tasks = tasks.filter(t => t.done);
+  else tasks = tasks.filter(t => !t.done);
+  const po = { high:0, medium:1, low:2 };
+  tasks.sort((a,b) => { if(a.done!==b.done) return a.done?1:-1; return (po[a.priority]||1)-(po[b.priority]||1); });
+  if (!tasks.length) { el.innerHTML=`<div class="empty-st"><div class="empty-st-i">${filter==='done'?'🎊':'✨'}</div>${filter==='done'?'Nothing yet!':'All clear!'}</div>`; return; }
+  const ic = { high:'🔴', medium:'🟡', low:'🟢' };
+  el.innerHTML = tasks.map(t => `<div class="ti ${t.done?'done':''} ${S.focusTask===t.id?'focused-t':''}">
+    <div class="cb ${t.done?'chk':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+    <div class="tibody">
+      <div class="titxt">${esc(t.text)}</div>
+      <div class="titags">
+        <span class="tg t${t.priority[0]}">${ic[t.priority]} ${t.priority}</span>
+        ${t.isToday?'<span class="tg tt">📅 Today</span>':''}
+        ${S.focusTask===t.id?'<span class="tg tf">🔥 Focus</span>':''}
+      </div>
+    </div>
+    <div class="tiacts">
+      ${!t.done?`<button class="bi" onclick="lockFocus('${t.id}')" title="Focus">⚡</button>`:''}
+      <button class="bi" onclick="delTask('${t.id}')">🗑</button>
+    </div>
+  </div>`).join('');
+}
+
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active'); renderTasks();
+}
+
+// ═══════════════════════════════════════════════════════
+// FOCUS PANEL
+// ═══════════════════════════════════════════════════════
+function renderFocus() {
+  const nm = document.getElementById('fc-name'), sb = document.getElementById('fc-sub');
+  if (!nm) return;
+  const t = S.tasks.find(t => t.id===S.focusTask && !t.done);
+  if (t) { nm.textContent = t.text; sb.textContent = 'You got this. Start tiny if you need to.'; }
+  else { nm.textContent = 'Nothing selected'; sb.textContent = 'Tasks tab → tap ⚡ to lock in'; }
+}
+
+function jsToggle() {
+  if (!jsOn) {
+    jsOn=true; document.getElementById('js-btn').textContent='⏸ Pause';
+    jsInt = setInterval(() => {
+      jsSec--; jsUpdateDisp();
+      if (jsSec <= 0) {
+        clearInterval(jsInt); jsOn=false;
+        document.getElementById('js-btn').textContent='▶ Keep going!';
+        document.getElementById('js-disp').style.color='var(--green)';
+        toast('2 minutes DONE! 🎉 That was the hardest part.');
+        addBubble('coach', "You just crossed the activation barrier — that's genuinely the hardest part for ADHD brains. 2 minutes in. Keep riding it if you can 💪");
+        chatHistory.push({ role:'assistant', content:"You just crossed the activation barrier — that's genuinely the hardest part for ADHD brains. 2 minutes in. Keep riding it if you can 💪" });
+        saveData();
+      }
+    }, 1000);
+  } else {
+    jsOn=false; clearInterval(jsInt);
+    document.getElementById('js-btn').textContent='▶ Resume';
+  }
+}
+function jsReset() {
+  jsOn=false; clearInterval(jsInt); jsSec=120;
+  document.getElementById('js-disp').style.color='var(--accent)';
+  document.getElementById('js-btn').textContent="▶ I'll try 2 min";
+  jsUpdateDisp();
+}
+function jsUpdateDisp() {
+  const m=Math.floor(jsSec/60).toString().padStart(2,'0'), s=(jsSec%60).toString().padStart(2,'0');
+  document.getElementById('js-disp').textContent=`${m}:${s}`;
+}
+
+function elToggle() {
+  if (!elOn) { elOn=true; document.getElementById('el-btn').textContent='⏸ Pause'; elInt=setInterval(()=>{elSec++;elUpdateDisp();},1000); }
+  else { elOn=false; clearInterval(elInt); document.getElementById('el-btn').textContent='▶ Resume'; }
+}
+function elReset() { elOn=false; clearInterval(elInt); elSec=0; document.getElementById('el-btn').textContent='▶ Start'; elUpdateDisp(); }
+function elUpdateDisp() {
+  const h=Math.floor(elSec/3600),m=Math.floor((elSec%3600)/60),s=elSec%60;
+  document.getElementById('el-disp').textContent=h?`${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`:`${m}:${s.toString().padStart(2,'0')}`;
+}
+
+async function doBreakdown() {
+  const t = S.tasks.find(t=>t.id===S.focusTask&&!t.done);
+  if (!t) { toast('Lock in on a task first (Tasks → ⚡)'); return; }
+  const btn=document.getElementById('bd-btn'), el=document.getElementById('bd-content');
+  btn.textContent='…'; btn.disabled=true;
+  el.innerHTML='<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">Breaking it down…</div>';
+  try {
+    const r=await fetch('/api/breakdown',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:t.text})});
+    const d=await r.json();
+    stepsDone=new Array((d.steps||[]).length).fill(false);
+    el.innerHTML=(d.steps||[]).map((s,i)=>`<div class="step-row">
+      <div class="scb" id="scb-${i}" onclick="toggleStep(${i})">${stepsDone[i]?'✓':''}</div>
+      <div class="stxt" id="stxt-${i}">${esc(s)}</div>
+    </div>`).join('')+(d.encouragement?`<div class="bd-enc">"${esc(d.encouragement)}"</div>`:'');
+  } catch { el.innerHTML='<div style="font-size:11px;color:var(--red)">Could not break down.</div>'; }
+  btn.textContent='Refresh'; btn.disabled=false;
+}
+
+function toggleStep(i) {
+  stepsDone[i]=!stepsDone[i];
+  document.getElementById('scb-'+i).className='scb'+(stepsDone[i]?' done':'');
+  document.getElementById('scb-'+i).textContent=stepsDone[i]?'✓':'';
+  document.getElementById('stxt-'+i).className='stxt'+(stepsDone[i]?' done':'');
+  if(stepsDone[i]) toast('Step done! 🎉');
+}
+
+// ═══════════════════════════════════════════════════════
+// BRAIN DUMP
+// ═══════════════════════════════════════════════════════
+async function saveDump() {
+  const el=document.getElementById('dump-ta');
+  const text=el.value.trim(); if(!text) return;
+  S.brainDumps.unshift({ id:uid(), text, ts:Date.now() });
+  el.value=''; saveData(); renderDumps();
+  const area=document.getElementById('dump-analysis');
+  area.innerHTML='<div class="da-box"><div class="da-loading">✨ Your coach is reading this…</div></div>';
+  try {
+    const r=await fetch('/api/processdump',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(d.needsKey){showKeyModal();area.innerHTML='';return;}
+    renderDumpAnalysis(d,area);
+  } catch { area.innerHTML='<div class="da-box"><div class="da-loading" style="color:var(--red)">Could not analyze.</div></div>'; }
+}
+
+function renderDumpAnalysis(d, area) {
+  const cats=(d.categories||[]).map(c=>`
+    <div class="da-cat-lbl">${c.emoji} ${c.name}</div>
+    ${(c.items||[]).map(item=>`<div class="da-item"><span style="flex:1">${esc(item)}</span><button class="da-add" onclick="dumpToTask('${esc(item)}',this)">→ Task</button></div>`).join('')}
+  `).join('');
+  area.innerHTML=`<div class="da-box">
+    <div class="da-enc">${esc(d.encouragement||'')}</div>
+    ${cats}
+    ${d.anchor?`<div class="da-anchor">💡 ${esc(d.anchor)}</div>`:''}
+  </div>`;
+}
+
+function dumpToTask(text, btn) {
+  S.tasks.unshift({id:uid(),text,priority:'medium',isToday:false,done:false,createdAt:Date.now(),completedAt:null});
+  saveData(); renderTasks(); btn.textContent='✓'; btn.disabled=true;
+  toast('Added to tasks ✅');
+}
+
+function renderDumps() {
+  const el=document.getElementById('dump-list'); if(!el) return;
+  const items=S.brainDumps.slice(0,8);
+  if(!items.length){el.innerHTML='<div style="font-size:11px;color:var(--muted)">Nothing yet.</div>';return;}
+  el.innerHTML=items.map(d=>`<div class="dump-i">
+    <span style="font-size:12px">💭</span>
+    <span class="dump-itxt">${esc(d.text.slice(0,65))}${d.text.length>65?'…':''}</span>
+    <div class="dump-iacts"><button class="bi" onclick="delDump('${d.id}')">🗑</button></div>
+  </div>`).join('');
+}
+function delDump(id){S.brainDumps=S.brainDumps.filter(d=>d.id!==id);saveData();renderDumps();}
+
+// ═══════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════
+function renderCalendar() {
+  const el=document.getElementById('cal-zone'); if(!el) return;
+  const now=new Date();
+  const days=[];
+  for(let i=6;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); days.push(d); }
+  el.innerHTML=days.map(day=>{
+    const start=new Date(day); start.setHours(0,0,0,0);
+    const end=new Date(day); end.setHours(23,59,59,999);
+    const completed=S.tasks.filter(t=>t.done&&t.completedAt&&t.completedAt>=start.getTime()&&t.completedAt<=end.getTime());
+    const isToday=day.toDateString()===now.toDateString();
+    const dayName=isToday?'Today':day.toLocaleDateString('en-US',{weekday:'short'});
+    const dateStr=day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<div class="cal-day" style="${isToday?'border-color:var(--accent)44;':''}">
+      <div class="cal-day-hd">
+        <div>
+          <div class="cal-day-name" style="${isToday?'color:var(--accent)':''}">${dayName}</div>
+          <div class="cal-day-date">${dateStr}</div>
+        </div>
+        <span class="cal-count ${completed.length===0?'zero':''}">${completed.length} done</span>
+      </div>
+      ${completed.length?completed.map(t=>`<div class="cal-task"><span class="cal-check">✓</span><span style="flex:1">${esc(t.text)}</span></div>`).join(''):`<div class="cal-none">Nothing completed</div>`}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PANIC MODE
+// ═══════════════════════════════════════════════════════
+function triggerPanic() { showTab('panic'); document.getElementById('panic-in').focus(); }
+
+async function doPanic() {
+  const text=document.getElementById('panic-in').value.trim();
+  const area=document.getElementById('panic-result');
+  area.innerHTML='<div class="panic-result"><div style="text-align:center;padding:10px;color:var(--muted);font-size:12px">Getting help…</div></div>';
+  try {
+    const r=await fetch('/api/panic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    const d=await r.json();
+    if(d.needsKey){showKeyModal();area.innerHTML='';return;}
+    area.innerHTML=`<div class="panic-result">
+      <div class="pr-section"><div class="pr-lbl">First, breathe.</div><div class="pr-breathe">${esc(d.breathe||'')}</div></div>
+      <div class="pr-section"><div class="pr-lbl">This is not you failing.</div><div class="pr-text">${esc(d.normalize||'')}</div></div>
+      <div class="pr-section"><div class="pr-lbl">Right now, try this:</div><div class="pr-text">${esc(d.ground||'')}</div></div>
+      ${d.next_step?`<div class="pr-lbl" style="margin-top:8px">When you're ready — ONE small step:</div><div class="pr-next">${esc(d.next_step)}</div>`:''}
+    </div>`;
+    if(d.breathe){
+      const combined=`${d.breathe} ${d.normalize} ${d.ground}${d.next_step?' When ready: '+d.next_step:''}`;
+      addBubble('coach',combined); chatHistory.push({role:'assistant',content:combined}); saveData();
+    }
+  } catch { area.innerHTML='<div class="panic-result"><div style="color:var(--red);font-size:12px;text-align:center">Could not reach server.</div></div>'; }
+}
+
+function checkGround(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.gb-done').style.opacity=el.classList.contains('checked')?'1':'0';
+  if(el.classList.contains('checked')) toast('✓ Good');
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg){ const tc=document.getElementById('toasts'); const t=document.createElement('div'); t.className='toast'; t.textContent=msg; tc.appendChild(t); setTimeout(()=>t.remove(),3200); }
+
+document.addEventListener('keydown', e => {
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){ e.preventDefault(); showTab('tasks'); setTimeout(()=>document.getElementById('task-in')?.focus(),50); }
+  if((e.metaKey||e.ctrlKey)&&e.key==='b'){ e.preventDefault(); showTab('dump'); setTimeout(()=>document.getElementById('dump-ta')?.focus(),50); }
+});
+
+boot();
+</script>
+</body>
+</html>
