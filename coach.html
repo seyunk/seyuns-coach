@@ -263,6 +263,23 @@
     .plate-ctx-ta:focus { border-color: var(--accent); }
     .plate-empty { text-align: center; padding: 28px 14px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 
+    /* Quick Capture FAB */
+    .qc-fab { position: fixed; bottom: 22px; left: 22px; z-index: 90; }
+    .qc-btn { background: linear-gradient(135deg, var(--accent), var(--a2)); color: white; border: none; border-radius: 24px; padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px var(--a2)55; transition: all .15s; letter-spacing: -.2px; }
+    .qc-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 26px var(--a2)77; }
+    .qc-panel { position: fixed; bottom: 66px; left: 22px; z-index: 91; width: 310px; background: var(--surface); border: 1px solid var(--a2)55; border-radius: 14px; padding: 14px; box-shadow: 0 8px 32px #0009; display: none; }
+    .qc-panel.open { display: block; animation: slideUp .15s ease; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .qc-ta { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; color: var(--text); font-size: 13px; resize: none; min-height: 72px; outline: none; font-family: inherit; line-height: 1.5; transition: border-color .15s; }
+    .qc-ta:focus { border-color: var(--a2); }
+    .qc-item { display: flex; align-items: flex-start; gap: 7px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .qc-item:last-child { border-bottom: none; }
+    .qc-item.done-c span { text-decoration: line-through; color: var(--muted); }
+
+    /* Goal progress sub-section */
+    .goal-progress { background: var(--s2); border-left: 2px solid var(--a2)66; border-radius: 0 6px 6px 0; padding: 8px 10px; margin: 4px 0 10px; }
+    .gp-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--a2); margin-bottom: 5px; }
+
     /* Modal */
     .ov { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 100; }
     .ov.hidden { display: none; }
@@ -385,9 +402,17 @@
 
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">Short-term goals (next 2–4 weeks)</div>
         <textarea class="profile-ta" id="profile-short" placeholder="e.g. 'Submit 3 research internship applications. Get through NLP chapter 2–4. Set up a daily routine.'"></textarea>
+        <div class="goal-progress">
+          <div class="gp-lbl">✓ Progress so far</div>
+          <textarea class="profile-ta" id="profile-short-progress" style="min-height:52px;margin-bottom:0;background:transparent;border-color:transparent;padding-left:0" placeholder="What have you actually done toward these? Even tiny wins count."></textarea>
+        </div>
 
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">Long-term goals & what drives you</div>
         <textarea class="profile-ta" id="profile-long" placeholder="e.g. 'Buy back Gwanak Analog — my dad's company. Build enough skills and network to eventually run it. Prove I can do this.'"></textarea>
+        <div class="goal-progress">
+          <div class="gp-lbl">✓ Progress so far</div>
+          <textarea class="profile-ta" id="profile-long-progress" style="min-height:52px;margin-bottom:0;background:transparent;border-color:transparent;padding-left:0" placeholder="Recent wins toward this — anything that moved you forward."></textarea>
+        </div>
 
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:10px 0 5px">How you work best (and what blocks you)</div>
         <textarea class="profile-ta" id="profile-style" placeholder="e.g. 'I work best in the morning before 12pm. I spiral when I don't know what to do first. I need small clear steps. I avoid things that feel too big or vague.'"></textarea>
@@ -425,13 +450,28 @@
   </div>
 </div>
 
+<!-- Quick Capture FAB -->
+<div class="qc-fab">
+  <div class="qc-panel" id="qc-panel">
+    <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--a2)">💭 Capture a thought</div>
+    <textarea class="qc-ta" id="qc-ta" placeholder="Task, worry, idea — just get it out of your head…"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saveCapture()} if(event.key==='Escape')closeCapture()"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <span style="font-size:10px;color:var(--muted)">Enter to save · Esc to close</span>
+      <button class="btn btn-p btn-sm" onclick="saveCapture()">Save ✓</button>
+    </div>
+    <div id="qc-recent"></div>
+  </div>
+  <button class="qc-btn" onclick="toggleCapture()" id="qc-fab-btn">💭 Capture</button>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, plate: [], profile: {} };
+let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, plate: [], profile: {}, captures: [] };
 let chatHistory = [];
 let planSettingsOpen = false;
 
@@ -764,10 +804,12 @@ function renderCalendar() {
 // ═══════════════════════════════════════════════════════
 function saveProfile() {
   S.profile = {
-    mindset:    document.getElementById('profile-mindset').value.trim(),
-    shortGoals: document.getElementById('profile-short').value.trim(),
-    longGoals:  document.getElementById('profile-long').value.trim(),
-    workStyle:  document.getElementById('profile-style').value.trim(),
+    mindset:       document.getElementById('profile-mindset').value.trim(),
+    shortGoals:    document.getElementById('profile-short').value.trim(),
+    shortProgress: document.getElementById('profile-short-progress').value.trim(),
+    longGoals:     document.getElementById('profile-long').value.trim(),
+    longProgress:  document.getElementById('profile-long-progress').value.trim(),
+    workStyle:     document.getElementById('profile-style').value.trim(),
   };
   saveData();
   const saved = document.getElementById('profile-saved');
@@ -779,10 +821,63 @@ function saveProfile() {
 function renderProfile() {
   const p = S.profile || {};
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-  set('profile-mindset', p.mindset);
-  set('profile-short',   p.shortGoals);
-  set('profile-long',    p.longGoals);
-  set('profile-style',   p.workStyle);
+  set('profile-mindset',        p.mindset);
+  set('profile-short',          p.shortGoals);
+  set('profile-short-progress', p.shortProgress);
+  set('profile-long',           p.longGoals);
+  set('profile-long-progress',  p.longProgress);
+  set('profile-style',          p.workStyle);
+}
+
+// ═══════════════════════════════════════════════════════
+// QUICK CAPTURE
+// ═══════════════════════════════════════════════════════
+let captureOpen = false;
+
+function toggleCapture() {
+  captureOpen ? closeCapture() : openCapture();
+}
+
+function openCapture() {
+  captureOpen = true;
+  document.getElementById('qc-panel').classList.add('open');
+  document.getElementById('qc-ta').focus();
+  renderCaptureRecent();
+}
+
+function closeCapture() {
+  captureOpen = false;
+  document.getElementById('qc-panel').classList.remove('open');
+}
+
+function saveCapture() {
+  const el = document.getElementById('qc-ta');
+  const text = el.value.trim();
+  if (!text) { closeCapture(); return; }
+  if (!S.captures) S.captures = [];
+  S.captures.unshift({ id: uid(), text, ts: Date.now(), done: false });
+  el.value = '';
+  S.lastSchedule = null; // invalidate so next Build Day picks this up
+  saveData();
+  renderCaptureRecent();
+  toast('Captured ✓ — Build Day will include this');
+}
+
+function markCaptureDone(id) {
+  const c = (S.captures || []).find(c => c.id === id);
+  if (c) { c.done = true; saveData(); renderCaptureRecent(); }
+}
+
+function renderCaptureRecent() {
+  const el = document.getElementById('qc-recent');
+  if (!el) return;
+  const items = (S.captures || []).filter(c => !c.done).slice(0, 5);
+  if (!items.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:10px 0 5px">Pending captures</div>` +
+    items.map(c => `<div class="qc-item">
+      <span style="flex:1">${esc(c.text.slice(0, 80))}${c.text.length > 80 ? '…' : ''}</span>
+      <button class="bi" onclick="markCaptureDone('${c.id}')" title="Mark done">✓</button>
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -838,7 +933,12 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function toast(msg){ const tc=document.getElementById('toasts'); const t=document.createElement('div'); t.className='toast'; t.textContent=msg; tc.appendChild(t); setTimeout(()=>t.remove(),3200); }
 
 document.addEventListener('keydown', e => {
-  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); document.getElementById('chat-ta')?.focus(); }
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){ e.preventDefault(); openCapture(); }
+  if(e.key==='Escape' && captureOpen) closeCapture();
+});
+
+document.addEventListener('click', e => {
+  if (captureOpen && !e.target.closest('.qc-fab')) closeCapture();
 });
 
 boot();

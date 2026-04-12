@@ -168,10 +168,21 @@ def build_context(data):
         lines += ["SEYUN'S CURRENT MINDSET:", profile['mindset'], ""]
     if profile.get('shortGoals'):
         lines += ["SHORT-TERM GOALS:", profile['shortGoals'], ""]
+    if profile.get('shortProgress'):
+        lines += ["→ Progress so far:", profile['shortProgress'], ""]
     if profile.get('longGoals'):
         lines += ["LONG-TERM GOALS:", profile['longGoals'], ""]
+    if profile.get('longProgress'):
+        lines += ["→ Progress so far:", profile['longProgress'], ""]
     if profile.get('workStyle'):
         lines += ["HOW SHE WORKS BEST:", profile['workStyle'], ""]
+
+    captures = [c for c in data.get('captures', []) if not c.get('done')]
+    if captures:
+        lines.append("QUICK CAPTURES (things she remembered mid-work — treat as high priority):")
+        for c in captures[:8]:
+            lines.append(f"  • {c.get('text','')[:150]}")
+        lines.append("")
 
     if plate:
         lines.append("ON HER PLATE (ongoing projects):")
@@ -419,6 +430,9 @@ def build_schedule():
         for m in chat if m.get('role') in ('user', 'assistant')
     ) or "No recent conversation"
 
+    captures = [c for c in data.get('captures', []) if not c.get('done')]
+    captures_text = "\n".join(f"- {c.get('text','')[:200]}" for c in captures[:8]) or "None"
+
     plate = data.get('plate', [])
     plate_text = "\n\n".join(
         f"- {p.get('name','')}: {p.get('ctx','(no context)')}"
@@ -440,6 +454,9 @@ TASKS:
 
 ON HER PLATE — ongoing projects with no deadline but need daily progress (CRITICAL — generate one specific concrete action per item):
 {plate_text}
+
+QUICK CAPTURES (things she remembered mid-work — include at least one in the plan):
+{captures_text}
 
 RECENT BRAIN DUMPS (what's been on her mind):
 {dumps_text}
