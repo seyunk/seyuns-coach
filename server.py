@@ -177,11 +177,11 @@ def build_context(data):
     if profile.get('workStyle'):
         lines += ["HOW SHE WORKS BEST:", profile['workStyle'], ""]
 
-    captures = [c for c in data.get('captures', []) if not c.get('done')]
-    if captures:
-        lines.append("QUICK CAPTURES (things she remembered mid-work — treat as high priority):")
-        for c in captures[:8]:
-            lines.append(f"  • {c.get('text','')[:150]}")
+    captured_tasks = [t for t in tasks if t.get('fromCapture') and not t.get('done')]
+    if captured_tasks:
+        lines.append("MID-WORK CAPTURES (things she remembered while working — she captured these instead of chasing them, good for her):")
+        for t in captured_tasks[:6]:
+            lines.append(f"  • {t.get('text','')[:150]}")
         lines.append("")
 
     if plate:
@@ -430,8 +430,9 @@ def build_schedule():
         for m in chat if m.get('role') in ('user', 'assistant')
     ) or "No recent conversation"
 
-    captures = [c for c in data.get('captures', []) if not c.get('done')]
-    captures_text = "\n".join(f"- {c.get('text','')[:200]}" for c in captures[:8]) or "None"
+    all_tasks_for_sched = data.get('tasks', [])
+    captured_tasks_sched = [t for t in all_tasks_for_sched if t.get('fromCapture') and not t.get('done')]
+    captures_text = "\n".join(f"- {t.get('text','')[:200]}" for t in captured_tasks_sched[:8]) or "None"
 
     plate = data.get('plate', [])
     plate_text = "\n\n".join(
@@ -545,6 +546,40 @@ Return ONLY valid JSON:
         return jsonify({"tasks": []})
     except Exception as e:
         return jsonify({"tasks": [], "error": str(e)})
+
+
+@app.route('/api/quickcapture', methods=['POST'])
+def quick_capture():
+    """Called when user captures a mid-work thought. Returns a short personal ack."""
+    text = (request.json or {}).get('text', '').strip()
+    if not text:
+        return jsonify({"reply": "Captured — I've got it."})
+
+    data = load_data()
+    context = build_context(data)
+
+    system = SYSTEM_PROMPT + f"\n\n━━━ SEYUN'S CONTEXT ━━━\n{context}\n\n" + """
+She just captured a mid-work thought. She's in the middle of something and doesn't want to be derailed.
+
+Your job: acknowledge the capture in 1–2 sentences MAX. Be warm and personal — she has ADHD so this is genuinely hard to do (capturing instead of chasing). Tell her it's safe, you've got it, and she can get back to what she was doing.
+
+Rules:
+- 1–2 sentences only. Seriously.
+- Reference the specific thing she captured if it connects to her goals
+- DO NOT give advice, next steps, or ask questions
+- End by directing her back to her current work
+- Keep it under 25 words
+
+Return JSON only: {"reply": "..."}"""
+
+    try:
+        raw = api_call(
+            [{"role": "user", "content": f"I just captured: {text}"}],
+            system=system, max_tokens=120
+        )
+        return jsonify(extract_json(raw))
+    except Exception as e:
+        return jsonify({"reply": f"Got it — '{text[:40]}' is safe. Back to work 💪"})
 
 
 @app.route('/api/weekreflect', methods=['POST'])
