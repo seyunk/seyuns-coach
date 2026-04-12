@@ -12,6 +12,7 @@ app = Flask(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE, 'data.json')
 _client = None
+KEY_FILE = os.path.join(BASE, '.api_key')
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,11 @@ def save_data(data):
 def get_client():
     global _client
     if _client is None:
+        # Priority: env var → saved key file
         key = os.environ.get('ANTHROPIC_API_KEY', '')
+        if not key and os.path.exists(KEY_FILE):
+            with open(KEY_FILE, 'r') as f:
+                key = f.read().strip()
         if not key:
             raise ValueError("ANTHROPIC_API_KEY not set")
         _client = anthropic.Anthropic(api_key=key)
@@ -167,6 +172,9 @@ def set_key():
         return jsonify({"error": "Empty key"}), 400
     os.environ['ANTHROPIC_API_KEY'] = key
     _client = anthropic.Anthropic(api_key=key)
+    # Persist key locally so it survives server restarts
+    with open(KEY_FILE, 'w') as f:
+        f.write(key)
     return jsonify({"ok": True})
 
 @app.route('/api/tasks', methods=['GET'])
