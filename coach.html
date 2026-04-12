@@ -245,23 +245,19 @@
     .el-sub { font-size: 10px; color: var(--muted); margin-bottom: 9px; }
     .el-btns { display: flex; gap: 5px; justify-content: center; }
 
-    /* ── Habits panel ── */
-    .habit-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
-    .habit-item:last-of-type { border-bottom: none; }
-    .habit-check { width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; transition: all .15s; }
-    .habit-check:hover { border-color: var(--accent); }
-    .habit-check.done { background: var(--accent); border-color: var(--accent); color: white; }
-    .habit-body { flex: 1; }
-    .habit-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-    .habit-streak { display: flex; gap: 4px; }
-    .habit-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
-    .habit-dot.hit { background: var(--accent); }
-    .habit-dot.today { background: var(--green); }
-    .habit-freq { font-size: 10px; color: var(--muted); padding: 2px 7px; border-radius: 20px; background: var(--s2); border: 1px solid var(--border); flex-shrink: 0; }
-    .habit-del { opacity: 0; transition: opacity .15s; }
-    .habit-item:hover .habit-del { opacity: 1; }
-    .habit-add-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-    .habit-empty { text-align: center; padding: 28px 14px; color: var(--muted); font-size: 13px; }
+    /* ── On My Plate panel ── */
+    .plate-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 13px 14px; margin-bottom: 9px; transition: border-color .15s; }
+    .plate-card:hover { border-color: var(--accent)88; }
+    .plate-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .plate-name { font-size: 13px; font-weight: 700; }
+    .plate-ctx  { font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .plate-del  { opacity: 0; transition: opacity .15s; flex-shrink: 0; }
+    .plate-card:hover .plate-del { opacity: 1; }
+    .plate-add-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-bottom: 12px; display: none; }
+    .plate-add-form.open { display: block; }
+    .plate-ctx-ta { width: 100%; background: var(--s2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 12px; resize: none; min-height: 70px; outline: none; font-family: inherit; line-height: 1.5; margin: 7px 0; transition: border-color .15s; }
+    .plate-ctx-ta:focus { border-color: var(--accent); }
+    .plate-empty { text-align: center; padding: 28px 14px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 
     /* Modal */
     .ov { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 100; }
@@ -354,7 +350,7 @@
       <button class="tab" onclick="showTab('tasks')" id="tab-tasks">✅ Tasks</button>
       <button class="tab" onclick="showTab('dump')" id="tab-dump">💭 Dump</button>
       <button class="tab" onclick="showTab('calendar')" id="tab-calendar">📅 Week</button>
-      <button class="tab" onclick="showTab('habits')" id="tab-habits">🔄 Habits</button>
+      <button class="tab" onclick="showTab('plate')" id="tab-plate">📌 Plate</button>
       <button class="tab" onclick="showTab('panic')" id="tab-panic" style="color:var(--red)">🆘 Calm</button>
     </div>
 
@@ -451,20 +447,22 @@
       <div class="cal-zone" id="cal-zone"></div>
     </div>
 
-    <!-- ── HABITS ── -->
-    <div class="panel" id="panel-habits">
+    <!-- ── ON MY PLATE ── -->
+    <div class="panel" id="panel-plate">
       <div class="zone">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">Things you do <strong style="color:var(--text)">consistently</strong>, not by deadline — job search, LinkedIn, exercise, studying. Your coach will slot these into your day plan automatically.</div>
-        <div class="habit-add-row">
-          <input class="inp" style="flex:1;min-width:120px" id="habit-in" type="text" placeholder="e.g. Job search, Exercise, LinkedIn…" onkeydown="if(event.key==='Enter')addHabit()">
-          <select class="sel" id="habit-freq">
-            <option value="daily">Every day</option>
-            <option value="weekdays">Weekdays</option>
-            <option value="weekly">Weekly</option>
-          </select>
-          <button class="btn btn-p" onclick="addHabit()">+</button>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+          Big ongoing things that are always on your mind — job search, NLP study, research applications. Tell your coach what each is and where you're stuck. Every day, <strong style="color:var(--text)">Build Day will generate a specific action</strong> for each one so you always know exactly what to do.
         </div>
-        <div id="habit-list"></div>
+        <button class="btn btn-p btn-sm" style="margin-bottom:10px;width:100%" onclick="togglePlateForm()">+ Add something on your plate</button>
+        <div class="plate-add-form" id="plate-form">
+          <input class="inp" style="width:100%;margin-bottom:7px" id="plate-name-in" type="text" placeholder="What is it? (e.g. Job Search, NLP Study)">
+          <textarea class="plate-ctx-ta" id="plate-ctx-in" placeholder="Tell your coach about it — where are you now? What are you anxious about? What's blocking you?&#10;&#10;e.g. 'I need to apply for research internships but I don't know where to start or which labs to target. I get overwhelmed and avoid it.'"></textarea>
+          <div style="display:flex;gap:6px;justify-content:flex-end">
+            <button class="btn btn-g btn-sm" onclick="togglePlateForm()">Cancel</button>
+            <button class="btn btn-p btn-sm" onclick="savePlateItem()">Save</button>
+          </div>
+        </div>
+        <div id="plate-list"></div>
       </div>
     </div>
 
@@ -504,7 +502,7 @@
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, habits: [] };
+let S = { tasks: [], brainDumps: [], focusTask: null, weeklyReflections: {}, chatHistory: [], lastSchedule: null, plate: [] };
 let filter = 'all';
 let chatHistory = [];
 let planSettingsOpen = false;
@@ -548,7 +546,7 @@ async function boot() {
   renderFocus();
   renderDumps();
   renderCalendar();
-  renderHabits();
+  renderPlate();
 
   // Restore chat history
   if (S.chatHistory && S.chatHistory.length) {
@@ -1060,74 +1058,49 @@ function checkGround(el) {
 }
 
 // ═══════════════════════════════════════════════════════
-// HABITS
+// ON MY PLATE
 // ═══════════════════════════════════════════════════════
-function addHabit() {
-  const el = document.getElementById('habit-in');
-  const name = el.value.trim(); if (!name) return;
-  if (!S.habits) S.habits = [];
-  S.habits.push({ id: uid(), name, freq: document.getElementById('habit-freq').value, completions: [] });
-  el.value = ''; saveData(); renderHabits(); toast('Habit added ✓');
+function togglePlateForm() {
+  const f = document.getElementById('plate-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('plate-name-in').focus();
 }
 
-function toggleHabit(id) {
-  const h = S.habits.find(h => h.id === id); if (!h) return;
-  const today = todayStr();
-  if (h.completions.includes(today)) {
-    h.completions = h.completions.filter(d => d !== today);
-  } else {
-    h.completions.push(today);
-  }
-  saveData(); renderHabits();
+function savePlateItem() {
+  const name = document.getElementById('plate-name-in').value.trim();
+  const ctx  = document.getElementById('plate-ctx-in').value.trim();
+  if (!name) return;
+  if (!S.plate) S.plate = [];
+  S.plate.push({ id: uid(), name, ctx, createdAt: Date.now() });
+  document.getElementById('plate-name-in').value = '';
+  document.getElementById('plate-ctx-in').value = '';
+  document.getElementById('plate-form').classList.remove('open');
+  saveData(); renderPlate();
+  toast('Added ✓ — will show up in Build Day');
 }
 
-function delHabit(id) {
-  S.habits = (S.habits || []).filter(h => h.id !== id);
-  saveData(); renderHabits();
+function delPlateItem(id) {
+  S.plate = (S.plate || []).filter(p => p.id !== id);
+  saveData(); renderPlate();
 }
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10); // "2026-04-12"
-}
-
-function last7Days() {
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
-  }
-  return days;
-}
-
-function renderHabits() {
-  const el = document.getElementById('habit-list'); if (!el) return;
-  const habits = S.habits || [];
-  if (!habits.length) {
-    el.innerHTML = `<div class="habit-empty">
-      <div style="font-size:28px;margin-bottom:8px">🔄</div>
-      No habits yet. Add things you need to do consistently — job search, LinkedIn, exercise, journaling.
+function renderPlate() {
+  const el = document.getElementById('plate-list'); if (!el) return;
+  const items = S.plate || [];
+  if (!items.length) {
+    el.innerHTML = `<div class="plate-empty">
+      <div style="font-size:26px;margin-bottom:8px">📌</div>
+      Nothing added yet.<br>Add the big ongoing things — job search, NLP study, research prep. Your coach will give you a specific action for each one every morning.
     </div>`; return;
   }
-  const today = todayStr();
-  const days = last7Days();
-  el.innerHTML = habits.map(h => {
-    const doneToday = (h.completions || []).includes(today);
-    const streak = days.map((d, i) => {
-      const hit = (h.completions || []).includes(d);
-      const isToday = d === today;
-      return `<div class="habit-dot ${isToday && doneToday ? 'today' : hit ? 'hit' : ''}" title="${d}"></div>`;
-    }).join('');
-    const freqLabel = { daily: 'daily', weekdays: 'weekdays', weekly: 'weekly' }[h.freq] || h.freq;
-    return `<div class="habit-item">
-      <div class="habit-check ${doneToday ? 'done' : ''}" onclick="toggleHabit('${h.id}')">${doneToday ? '✓' : ''}</div>
-      <div class="habit-body">
-        <div class="habit-name">${esc(h.name)}</div>
-        <div class="habit-streak">${streak}</div>
+  el.innerHTML = items.map(p => `
+    <div class="plate-card">
+      <div class="plate-card-top">
+        <div class="plate-name">${esc(p.name)}</div>
+        <button class="bi plate-del" onclick="delPlateItem('${p.id}')">🗑</button>
       </div>
-      <span class="habit-freq">${freqLabel}</span>
-      <button class="bi habit-del" onclick="delHabit('${h.id}')">🗑</button>
-    </div>`;
-  }).join('');
+      ${p.ctx ? `<div class="plate-ctx">${esc(p.ctx)}</div>` : ''}
+    </div>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════

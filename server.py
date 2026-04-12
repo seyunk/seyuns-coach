@@ -406,19 +406,11 @@ def build_schedule():
         for m in chat if m.get('role') in ('user', 'assistant')
     ) or "No recent conversation"
 
-    habits = data.get('habits', [])
-    today_str = datetime.now().strftime('%Y-%m-%d')
-    weekday = datetime.now().weekday()  # 0=Mon, 6=Sun
-    is_weekday = weekday < 5
-    due_habits = []
-    for h in habits:
-        freq = h.get('freq', 'daily')
-        done_today = today_str in (h.get('completions') or [])
-        if done_today:
-            continue
-        if freq == 'daily' or (freq == 'weekdays' and is_weekday) or freq == 'weekly':
-            due_habits.append(h.get('name', ''))
-    habits_text = "\n".join(f"- {name}" for name in due_habits) or "None due today"
+    plate = data.get('plate', [])
+    plate_text = "\n\n".join(
+        f"- {p.get('name','')}: {p.get('ctx','(no context)')}"
+        for p in plate
+    ) or "None added"
 
     now_str = datetime.now().strftime('%I:%M %p, %A %B %d')
 
@@ -433,8 +425,8 @@ WHAT SHE HAS ON HER MIND (use ALL of this, not just tasks):
 TASKS:
 {tasks_text}
 
-RECURRING HABITS DUE TODAY (slot at least 1-2 of these in):
-{habits_text}
+ON HER PLATE — ongoing projects with no deadline but need daily progress (CRITICAL — generate one specific concrete action per item):
+{plate_text}
 
 RECENT BRAIN DUMPS (what's been on her mind):
 {dumps_text}
@@ -448,7 +440,8 @@ YOUR RULES:
 - Break after every 1–2 work blocks (10 min minimum)
 - First block: easiest win to build momentum
 - Keep it realistic — 4 to 6 work blocks max for a day
-- Each label should be one clear, specific sentence she can act on immediately
+- Each label must be ONE specific sentence she can start immediately — not "work on job search" but "Open LinkedIn, search 'NLP research intern 2025', save 3 postings"
+- For EVERY item on her plate: include at least one block with a concrete micro-action for today. She doesn't know what to do — YOU decide for her. Be specific enough that she can start with zero thinking.
 - Time format: "9:30 AM"
 
 Return ONLY valid JSON:
