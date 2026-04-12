@@ -13,17 +13,70 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE, 'data.json')
 _client = None
 KEY_FILE = os.path.join(BASE, '.api_key')
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+
+def get_db_conn():
+    import psycopg2
+    return psycopg2.connect(DATABASE_URL)
+
+def init_db():
+    if not DATABASE_URL:
+        return
+    try:
+        conn = get_db_conn()
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS app_data (
+                    id TEXT PRIMARY KEY,
+                    data JSONB NOT NULL
+                )
+            """)
+            conn.commit()
+        conn.close()
+        print("PostgreSQL connected ✓")
+    except Exception as e:
+        print(f"DB init error: {e}")
 
 # ─── Data ─────────────────────────────────────────────────────────────────────
 
+EMPTY_DATA = {"tasks": [], "brainDumps": [], "focusTask": None,
+              "weeklyReflections": {}, "chatHistory": []}
+
 def load_data():
+    if DATABASE_URL:
+        try:
+            import psycopg2.extras
+            conn = get_db_conn()
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT data FROM app_data WHERE id = 'main'")
+                row = cur.fetchone()
+            conn.close()
+            return dict(row['data']) if row else EMPTY_DATA.copy()
+        except Exception as e:
+            print(f"DB load error: {e}")
+    # Local fallback: JSON file
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r') as f:
             return json.load(f)
-    return {"tasks": [], "brainDumps": [], "focusTask": None,
-            "weeklyReflections": {}, "chatHistory": []}
+    return EMPTY_DATA.copy()
 
 def save_data(data):
+    if DATABASE_URL:
+        try:
+            conn = get_db_conn()
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO app_data (id, data) VALUES ('main', %s)
+                    ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
+                """, (json.dumps(data),))
+                conn.commit()
+            conn.close()
+            return
+        except Exception as e:
+            print(f"DB save error: {e}")
+    # Local fallback: JSON file
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -426,6 +479,8 @@ coach_suggestions should be 1-3 items MAX. Only suggest things that make real se
     except Exception as e:
         return auth_err(e)
 
+
+init_db()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
