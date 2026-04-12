@@ -471,8 +471,9 @@ YOUR RULES:
 - Break after every 1–2 work blocks (10 min minimum)
 - First block: easiest win to build momentum
 - Keep it realistic — 4 to 6 work blocks max for a day
-- Each label must be ONE specific sentence she can start immediately — not "work on job search" but "Open LinkedIn, search 'NLP research intern 2025', save 3 postings"
-- For EVERY item on her plate: include at least one block with a concrete micro-action for today. She doesn't know what to do — YOU decide for her. Be specific enough that she can start with zero thinking.
+- label: 2–4 words ONLY — just the topic name (e.g. "LinkedIn search", "NLP chapter 2", "Email Prof Kim"). Short enough to read at a glance.
+- detail: ONE specific sentence telling her exactly what to do — this is the "how" (e.g. "Search 'NLP research intern 2025' and save 3 postings you like"). She taps to reveal this if she needs it.
+- For EVERY item on her plate: include at least one block. The label is short, the detail has the specific action.
 - Time format: "9:30 AM"
 
 Return ONLY valid JSON:
@@ -482,18 +483,18 @@ Return ONLY valid JSON:
     {{
       "time": "9:00 AM",
       "duration_min": 30,
-      "label": "One clear thing to do — specific enough to start immediately",
+      "label": "2-4 words max",
+      "detail": "One specific sentence: exactly what to open, write, or do first",
       "type": "work",
-      "task_id": "task id if from task list, otherwise null",
-      "note": "One short encouraging or practical note (optional, max 8 words)"
+      "task_id": "task id if from task list, otherwise null"
     }},
     {{
       "time": "9:30 AM",
       "duration_min": 10,
-      "label": "Break — get up, drink water",
+      "label": "Break",
+      "detail": null,
       "type": "break",
-      "task_id": null,
-      "note": null
+      "task_id": null
     }}
   ],
   "closing": "One short line — connect today to Gwanak Analog, make it feel worth it"
