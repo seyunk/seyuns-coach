@@ -406,6 +406,7 @@
       <button class="tab" onclick="showTab('profile')" id="tab-profile">👤 About Me</button>
       <button class="tab" onclick="showTab('plate')" id="tab-plate">📌 Plate</button>
       <button class="tab" onclick="showTab('calendar')" id="tab-calendar">📅 Week</button>
+      <button class="tab" onclick="showTab('panic')" id="tab-panic" style="color:var(--red)">🆘 Calm</button>
     </div>
 
     <!-- ── COACH CHAT ── -->
@@ -413,6 +414,7 @@
       <div class="quick-btns">
         <button class="qb" onclick="ask('What should I focus on right now?')">📍 What now?</button>
         <button class="qb" onclick="ask(\"I'm overwhelmed and stuck.\")">🧊 Stuck</button>
+        <button class="qb panic" onclick="triggerPanic()">🆘 Panic</button>
         <button class="qb" onclick="ask('Remind me why all this work matters.')">🔥 Why?</button>
         <button class="qb" onclick="ask('I just finished something!')">🎉 Done!</button>
       </div>
@@ -480,6 +482,29 @@
         </div>
         <div id="week-reflect-area"></div>
         <button class="btn btn-g btn-sm" style="width:100%;margin-top:10px" onclick="generateWeekReflect()">✨ AI reflection on this week</button>
+      </div>
+    </div>
+
+    <!-- ── PANIC / CALM ── -->
+    <div class="panel" id="panel-panic">
+      <div class="panic-zone">
+        <div class="panic-banner">
+          <div class="pb-title">🆘 Panic Mode</div>
+          <div class="pb-sub">You're safe. This overwhelm is your ADHD + OCD talking — not reality. Let's slow down.</div>
+        </div>
+        <div class="grounding-box">
+          <div class="gb-title">👁 Ground Yourself First (30 sec)</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Name 3 things you can see right now</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Feel your feet on the floor</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Slow breath — in for 4, out for 6</div>
+          <div class="gb-item" onclick="checkGround(this)"><span class="gb-done">✓</span> Drink a sip of water</div>
+        </div>
+        <div class="card">
+          <div class="card-lbl">What's triggering this? (optional)</div>
+          <textarea class="panic-in" id="panic-in" placeholder="Tell me what's going on. What feels out of control?"></textarea>
+          <button class="btn btn-red" style="width:100%" onclick="doPanic()">🆘 Help me calm down + find ONE next step</button>
+        </div>
+        <div id="panic-result"></div>
       </div>
     </div>
 
@@ -1211,6 +1236,48 @@ document.addEventListener('keydown', e => {
 document.addEventListener('click', e => {
   if (captureOpen && !e.target.closest('.qc-fab')) closeCapture();
 });
+
+// ═══════════════════════════════════════════════════════
+// PANIC MODE
+// ═══════════════════════════════════════════════════════
+function triggerPanic() { showTab('panic'); document.getElementById('panic-in').focus(); }
+
+async function doPanic() {
+  const text = document.getElementById('panic-in').value.trim();
+  const area = document.getElementById('panic-result');
+  area.innerHTML = '<div class="panic-result"><div style="text-align:center;padding:10px;color:var(--muted);font-size:12px">Getting help…</div></div>';
+  try {
+    const r = await fetch('/api/panic', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({text})});
+    const d = await r.json();
+    if (d.needsKey) { showKeyModal(); area.innerHTML = ''; return; }
+    area.innerHTML = `<div class="panic-result">
+      <div class="pr-section"><div class="pr-lbl">First, breathe.</div><div class="pr-breathe">${esc(d.breathe||'')}</div></div>
+      <div class="pr-section"><div class="pr-lbl">This is not you failing.</div><div class="pr-text">${esc(d.normalize||'')}</div></div>
+      <div class="pr-section"><div class="pr-lbl">Right now, try this:</div><div class="pr-text">${esc(d.ground||'')}</div></div>
+      ${d.next_step ? `<div class="pr-lbl" style="margin-top:8px">When you're ready — ONE small step:</div><div class="pr-next">${esc(d.next_step)}</div>` : ''}
+      ${d.next_step ? `<div style="margin-top:12px;text-align:center"><button class="btn btn-p btn-sm" onclick="panicToPlan('${esc(d.next_step)}')">↺ Add to day plan & rebuild</button></div>` : ''}
+    </div>`;
+    if (d.breathe) {
+      const combined = `${d.breathe} ${d.normalize} ${d.ground}${d.next_step ? ' When ready: ' + d.next_step : ''}`;
+      addBubble('coach', combined);
+      chatHistory.push({role:'assistant', content:combined});
+      saveData();
+    }
+  } catch { area.innerHTML = '<div class="panic-result"><div style="color:var(--red);font-size:12px;text-align:center">Could not reach server.</div></div>'; }
+}
+
+function panicToPlan(nextStep) {
+  S.tasks.unshift({id:uid(), text:nextStep, priority:'high', isToday:true, done:false, createdAt:Date.now(), completedAt:null});
+  saveData(); renderTasks();
+  toast('Added to plan — rebuilding your day…');
+  buildSchedule();
+  setTimeout(() => { document.querySelector('.plan-col').scrollTo(0,0); }, 400);
+}
+
+function checkGround(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.gb-done').style.opacity = el.classList.contains('checked') ? '1' : '0';
+}
 
 boot();
 </script>
