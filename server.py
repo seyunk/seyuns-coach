@@ -442,7 +442,7 @@ def build_schedule():
         "- {name}: {ctx}\n  CURRENT PROGRESS: {progress}".format(
             name=p.get('name',''),
             ctx=p.get('ctx','(no context)'),
-            progress=p.get('progress','not updated yet — ask her what's happening with this')
+            progress=p.get('progress',"not updated yet — ask her what's happening with this")
         )
         for p in plate
     ) or "None added"
